@@ -1,78 +1,60 @@
-name: Build Repo Listing
 
-env:
-  listPublishDirectory: Website
-  pathToCi: ci
-  
+name: Build Release
+
 on: 
   workflow_dispatch:
-  workflow_run:
-    workflows: [Build Release]
-    types:
-      - completed
-  release:
-     types: [published, created, edited, unpublished, deleted, released]
+  push:
+    branches: main
+    paths: Packages/com.furality.somnashader/**
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+env:
+  packageName: "com.furality.somnashader"
+
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-  
-# Allow one concurrent deployment
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
+  contents: write
 
 jobs:
-  
-  # Build the VPM Listing Website and deploy to GitHub Pages
-  build-listing:
-    name: build-listing
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
     steps:
-      
-      # Checkout Local Repository
-      - name: Checkout Local Repository
-        uses: actions/checkout@v4
 
-      # Checkout Automation Repository without removing prior checkouts
-      - name: Checkout Automation Repository
-        uses: actions/checkout@v4
-        with:
-          repository: vrchat-community/package-list-action
-          path: ${{ env.pathToCi }}
-          clean: false
+      - name: Checkout
+        uses: actions/checkout@v3
 
-      # Load cached data from previous runs
-      - name: Restore Cache
-        uses: actions/cache@v4
+      - name: get version
+        id: version
+        uses: notiz-dev/github-action-json-property@7c8cf5cc36eb85d8d287a8086a39dac59628eb31
         with:
-          path: |
-            ${{ env.pathToCi }}/.nuke/temp
-            ~/.nuget/packages
-          key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
-      
-      # Build Package Version Listing with Nuke
-      - name: Build Package Version Listing
-        run: ${{ env.pathToCi }}/build.cmd BuildRepoListing --root ${{ env.pathToCi }} --list-publish-directory $GITHUB_WORKSPACE/${{ env.listPublishDirectory }} --current-package-name ${{ vars.PACKAGE_NAME }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            path: "Packages/${{env.packageName}}/package.json"
+            prop_path: "version"
 
-      # Prepare for GitHub Pages deployment
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      
-      # Upload the VPM Listing Website to GitHub Pages artifacts
-      - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Set Environment Variables
+        run: |
+          echo "zipFile=${{ env.packageName }}-${{ steps.version.outputs.prop }}".zip >> $GITHUB_ENV
+          echo "unityPackage=${{ env.packageName }}-${{ steps.version.outputs.prop }}.unitypackage" >> $GITHUB_ENV
+
+      - name: Create Zip
+        uses: thedoctor0/zip-release@09336613be18a8208dfa66bd57efafd9e2685657
         with:
-          path: ${{ env.listPublishDirectory }}
-      
-      # Deploy the uploaded VPM Listing Website to GitHub Pages
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          type: "zip"
+          directory: "Packages/${{env.packageName}}/"
+          filename: "../../${{env.zipFile}}" # make the zip file two directories up, since we start two directories in above
+
+      - run: find "Packages/${{env.packageName}}/" -name \*.meta >> metaList
+
+      - name: Create UnityPackage
+        uses: pCYSl5EDgo/create-unitypackage@cfcd3cf0391a5ef1306342794866a9897c32af0b
+        with:
+          package-path: ${{ env.unityPackage }}
+          include-files: metaList
+
+
+      - name: Make Release
+        uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5
+        with:
+          tag_name: ${{ steps.version.outputs.prop }}
+          files: |
+            ${{ env.zipFile }}
+            ${{ env.unityPackage }}
+            Packages/${{ env.packageName }}/package.json
+
