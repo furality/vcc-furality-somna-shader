@@ -1,60 +1,79 @@
-
-name: Build Release
-
-on: 
-  workflow_dispatch:
-  push:
-    branches: main
-    paths: Packages/com.furality.somnashader/**
+name: Build Repo Listing
 
 env:
-  packageName: "com.furality.somnashader"
+  CurrentPackageName: com.furality.somnashader
+  listPublishDirectory: Website
+  pathToCi: ci
+  
+on: 
+  workflow_dispatch:
+  # workflow_run:
+  #   workflows: [Build Release]
+  #   types:
+  #     - completed
+  # release:
+  #    types: [published, created, edited, unpublished, deleted, released]
 
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+  
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
-  build:
+  
+  # Build the VPM Listing Website and deploy to GitHub Pages
+  build-listing:
+    name: build-listing
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
+      
+      # Checkout Local Repository
+      - name: Checkout Local Repository
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
 
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: get version
-        id: version
-        uses: notiz-dev/github-action-json-property@7c8cf5cc36eb85d8d287a8086a39dac59628eb31
+      # Checkout Automation Repository without removing prior checkouts
+      - name: Checkout Automation Repository
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
         with:
-            path: "Packages/${{env.packageName}}/package.json"
-            prop_path: "version"
+          repository: vrchat-community/package-list-action
+          path: ${{ env.pathToCi }}
+          clean: false
 
-      - name: Set Environment Variables
-        run: |
-          echo "zipFile=${{ env.packageName }}-${{ steps.version.outputs.prop }}".zip >> $GITHUB_ENV
-          echo "unityPackage=${{ env.packageName }}-${{ steps.version.outputs.prop }}.unitypackage" >> $GITHUB_ENV
-
-      - name: Create Zip
-        uses: thedoctor0/zip-release@09336613be18a8208dfa66bd57efafd9e2685657
+      # Load cached data from previous runs
+      - name: Restore Cache
+        uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84
         with:
-          type: "zip"
-          directory: "Packages/${{env.packageName}}/"
-          filename: "../../${{env.zipFile}}" # make the zip file two directories up, since we start two directories in above
+          path: |
+            ${{ env.pathToCi }}/.nuke/temp
+            ~/.nuget/packages
+          key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj') }}
+      
+      # Build Package Version Listing with Nuke
+      - name: Build Package Version Listing
+        run: ${{ env.pathToCi }}/build.cmd BuildRepoListing --root ${{ env.pathToCi }} --list-publish-directory $GITHUB_WORKSPACE/${{ env.listPublishDirectory }} --current-package-name ${{ env.CurrentPackageName }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - run: find "Packages/${{env.packageName}}/" -name \*.meta >> metaList
-
-      - name: Create UnityPackage
-        uses: pCYSl5EDgo/create-unitypackage@cfcd3cf0391a5ef1306342794866a9897c32af0b
+      # Prepare for GitHub Pages deployment
+      - name: Setup Pages
+        uses: actions/configure-pages@f156874f8191504dae5b037505266ed5dda6c382
+      
+      # Upload the VPM Listing Website to GitHub Pages artifacts
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@a753861a5debcf57bf8b404356158c8e1e33150c
         with:
-          package-path: ${{ env.unityPackage }}
-          include-files: metaList
-
-
-      - name: Make Release
-        uses: softprops/action-gh-release@1e07f4398721186383de40550babbdf2b84acfc5
-        with:
-          tag_name: ${{ steps.version.outputs.prop }}
-          files: |
-            ${{ env.zipFile }}
-            ${{ env.unityPackage }}
-            Packages/${{ env.packageName }}/package.json
-
+          path: ${{ env.listPublishDirectory }}
+      
+      # Deploy the uploaded VPM Listing Website to GitHub Pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@9dbe3824824f8a1377b8e298bafde1a50ede43e5
