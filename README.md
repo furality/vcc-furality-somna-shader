@@ -1,4 +1,4 @@
-# Official Furality source repo for Furality Umbra Shader
+# Official Furality source repo for Furality Somna Shader
 
 ## ▶ Using the shader with VRChat Creator Companion (VCC)
 

@@ -1,0 +1,20 @@
+{
+    "name": "Furality Somna Shader",
+    "id": "com.furality.somnashader",
+    "version": "0.1.0",
+    "description": "Furality Somna Avatar Shader for VRChat. Created by Naito @ Furality, Inc.",
+    "gitDependencies": {},
+    "author": {
+      "email": "help@furality.org",
+      "name": "Furality, Inc.",
+      "url": "https://furality.org"
+    },
+    "vpmDependencies": {
+      "com.llealloo.audiolink": "2.x.x"
+    },
+    "legacyFolders": {},
+    "legacyFiles": {},
+    "localPath": "Packages\\com.furality.umbrashader",
+    "hideInEditor": false,
+    "license": "Furality, Inc. Asset License"
+}
