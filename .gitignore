@@ -64,7 +64,7 @@ Assets/PackageMakerWindowData.asset*
 .vscode
 
 # User Package
-!com.somna.shader.internal
+!com.somna.shader
 
 # Ignore Amplify
 Assets/AmplifyShaderEditor

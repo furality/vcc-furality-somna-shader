@@ -1,0 +1,16 @@
+{
+    "name": "somnashader.Editor",
+    "rootNamespace": "",
+    "references": [
+        "somna.shader.internal"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,468 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Somna Shader Example Starshine
+  m_Shader: {fileID: 4800000, guid: 81669b4d4a735cd449a8957d34677bdf, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _ALPHABLEND_ON
+  - _BLEND_OFF
+  - _LIGHTINGSTYLE_STANDARD
+  - _STARSHINE_ON
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: 2000
+  stringTagMap:
+    RenderType: Opaque
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BumpMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Constellation:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailAlbedoMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailNormal:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailNormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DirectionalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _EmissionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GlowMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MaskMap01:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MaskMap02:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MaskMap03:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MaskMap04:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MetallicGlossMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OcclusionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ParallaxMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _TextureSample8:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _texcoord:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _ALPHAPREMULTIPLY: 0
+    - _AlphaChGlowAnimationBand: 10
+    - _AlphaChGlowAnimationMode: 0
+    - _AlphaChGlowAnimationSpeed: 0
+    - _AlphaChGlowAnimationStrength: 1
+    - _AlphaChGlowMinBrightness: 0
+    - _AlphaChGlowMode: 0
+    - _AlphaChGlowPulseDir: 0
+    - _AlphaChGlowPulseOffset: 0
+    - _AlphaChGlowPulseScale: 127
+    - _AlphaChGlowZone: 0
+    - _AlphaChReactiveBand: 10
+    - _AlphaChReactiveBlendMode: 0
+    - _AlphaChReactiveGlobalSmoothing: 1
+    - _AlphaChReactiveMinBrightness: 0
+    - _AlphaChReactiveMode: 0
+    - _AlphaChReactivePulseDir: 0
+    - _AlphaChReactivePulseOffset: 0
+    - _AlphaChReactivePulseScale: 127
+    - _BlendModeIndex: 0
+    - _BlendOPIndex: 0
+    - _BlendOPdst: 10
+    - _BlendOPsrc: 5
+    - _BlendOpRGB: 0
+    - _BlueChGlowAnimationBand: 10
+    - _BlueChGlowAnimationMode: 0
+    - _BlueChGlowAnimationSpeed: 0
+    - _BlueChGlowAnimationStrength: 1
+    - _BlueChGlowMinBrightness: 0
+    - _BlueChGlowMode: 0
+    - _BlueChGlowPulseDir: 0
+    - _BlueChGlowPulseOffset: 0
+    - _BlueChGlowPulseScale: 127
+    - _BlueChGlowZone: 0
+    - _BlueChReactiveBand: 10
+    - _BlueChReactiveBlendMode: 0
+    - _BlueChReactiveGlobalSmoothing: 1
+    - _BlueChReactiveMinBrightness: 0
+    - _BlueChReactiveMode: 0
+    - _BlueChReactivePulseDir: 0
+    - _BlueChReactivePulseOffset: 0
+    - _BlueChReactivePulseScale: 127
+    - _BumpScale: 1
+    - _BumpScale1: 1
+    - _ConstellationAmount: 0.3
+    - _ConstellationChannel: 0
+    - _ConstellationEnable: 0
+    - _ConstellationMap: 4
+    - _ConstellationMask: 4
+    - _Culling: 2
+    - _Cutoff: 0.5
+    - _DestinationBlendRGB: 0
+    - _DetailNormalChannel: 0
+    - _DetailNormalMapScale: 1
+    - _DetailNormalMask: 4
+    - _DetailUV: 0
+    - _DirectionMapUV: 0
+    - _DreamweaveChannel: 0
+    - _DreamweaveColorOffset: 0
+    - _DreamweaveEmission: 0
+    - _DreamweaveEnable: 0
+    - _DreamweaveGridThickness: 0.85
+    - _DreamweaveGridTile: 40
+    - _DreamweaveMask: 4
+    - _DreamweaveNormalScale: 1
+    - _DreamweavePos: 75
+    - _DreamweavePosSpeed: 0
+    - _DreamweaveSoftness: 20
+    - _DreamweaveSwapFrequency: 0
+    - _DreamweaveSwapSpeed: 0.25
+    - _DstBlend: 0
+    - _EdgeFade: 1
+    - _EdgeHide: 1
+    - _EmissionGlowAnimationBand: 10
+    - _EmissionGlowAnimationMode: 0
+    - _EmissionGlowAnimationSpeed: 0
+    - _EmissionGlowAnimationStrength: 1
+    - _EmissionGlowBlendMode: 0
+    - _EmissionGlowMinBrightness: 0
+    - _EmissionGlowMode: 0
+    - _EmissionGlowPulseDir: 0
+    - _EmissionGlowPulseOffset: 0
+    - _EmissionGlowPulseScale: 127
+    - _EmissionGlowZone: 0
+    - _EmissionMaskChannel: 0
+    - _EmissionMaskMap: 4
+    - _EmissionReactiveBand: 10
+    - _EmissionReactiveBlendMode: 0
+    - _EmissionReactiveGlobalSmoothing: 1
+    - _EmissionReactiveMinBrightness: 0
+    - _EmissionReactiveMode: 0
+    - _EmissionReactivePulseDir: 0
+    - _EmissionReactivePulseOffset: 0
+    - _EmissionReactivePulseScale: 127
+    - _EmissionUV: 0
+    - _EnableAlphaChannel: 0
+    - _EnableBlueChannel: 0
+    - _EnableEmission: 0
+    - _EnableGreenChannel: 0
+    - _EnableRedChannel: 0
+    - _EnableScrollingRainbow: 0
+    - _FabricLightChannel: 0
+    - _FabricLightEnable: 0
+    - _FabricLightEnable1: 0
+    - _FabricLightEnable2: 0
+    - _FabricLightEnable3: 0
+    - _FabricLightMap: 4
+    - _FadeFreqency: 0.035
+    - _Float1: 1
+    - _GlossChannel: 3
+    - _GlossMap: 0
+    - _GlossMapScale: 1
+    - _GlossMult: 0.5
+    - _Glossiness: 0.5
+    - _GlossyReflections: 1
+    - _GlowMask0: 0
+    - _GlowMask0Channel: 0
+    - _GlowMask1: 0
+    - _GlowMask1Channel: 0
+    - _GlowMask2: 0
+    - _GlowMask2Channel: 0
+    - _GlowMask3: 0
+    - _GlowMask3Channel: 0
+    - _GreenChGlowAnimationBand: 10
+    - _GreenChGlowAnimationMode: 0
+    - _GreenChGlowAnimationSpeed: 0
+    - _GreenChGlowAnimationStrength: 1
+    - _GreenChGlowMinBrightness: 0
+    - _GreenChGlowMode: 0
+    - _GreenChGlowPulseDir: 0
+    - _GreenChGlowPulseOffset: 0
+    - _GreenChGlowPulseScale: 127
+    - _GreenChGlowZone: 0
+    - _GreenChReactiveBand: 10
+    - _GreenChReactiveBlendMode: 0
+    - _GreenChReactiveGlobalSmoothing: 1
+    - _GreenChReactiveMinBrightness: 0
+    - _GreenChReactiveMode: 0
+    - _GreenChReactivePulseDir: 0
+    - _GreenChReactivePulseOffset: 0
+    - _GreenChReactivePulseScale: 127
+    - _InvertGloss: 0
+    - _LightingStyle: 0
+    - _MainTexUV: 0
+    - _MaskClipValue: 0.5
+    - _MaskMap01UV: 0
+    - _MaskMap02UV: 0
+    - _MaskMap03UV: 0
+    - _MaskMap04UV: 0
+    - _MaxOutlineWidth: 350
+    - _MaxOutlineWidth1: 350
+    - _Metallic: 0
+    - _MetallicChannel: 0
+    - _MetallicMask: 0
+    - _MetallicMult: 0
+    - _Mode: 0
+    - _NormalMapUV: 0
+    - _OcclusionChannel: 1
+    - _OcclusionMap: 0
+    - _OcclusionPower: 1
+    - _OcclusionStrength: 1
+    - _OpacityChannel: 0
+    - _OpacityMap: 5
+    - _Outline1Enable: 0
+    - _OutlineChannel: 0
+    - _OutlineEnable: 0
+    - _OutlineMask: 4
+    - _OutlineWidth: 20
+    - _OutlineWidth1: 20
+    - _Parallax: 0.02
+    - _RainbowALAnimationBand: 10
+    - _RainbowALAnimationMode: 0
+    - _RainbowALAnimationSpeed: 0
+    - _RainbowALAnimationStrength: 1
+    - _RainbowChannel: 0
+    - _RainbowEmission: 0
+    - _RainbowEnable: 0
+    - _RainbowHue: 1
+    - _RainbowHueRange: 1
+    - _RainbowMask: 4
+    - _RainbowMaskingChannel: 0
+    - _RainbowOutline: 0
+    - _RainbowRotation: 0
+    - _RainbowSaturation: 1
+    - _RainbowScale: 1
+    - _RainbowSpeed: 1
+    - _RainbowSpiralCurve: 1
+    - _RainbowStardust: 0
+    - _RainbowUVMode: 0
+    - _RainbowValue: 1
+    - _RedChGlowAnimationBand: 10
+    - _RedChGlowAnimationMode: 0
+    - _RedChGlowAnimationSpeed: 0
+    - _RedChGlowAnimationStrength: 1
+    - _RedChGlowMinBrightness: 0
+    - _RedChGlowMode: 0
+    - _RedChGlowPulseDir: 0
+    - _RedChGlowPulseOffset: 0
+    - _RedChGlowPulseScale: 127
+    - _RedChGlowZone: 0
+    - _RedChReactiveBand: 10
+    - _RedChReactiveBlendMode: 0
+    - _RedChReactiveGlobalSmoothing: 1
+    - _RedChReactiveMinBrightness: 0
+    - _RedChReactiveMode: 0
+    - _RedChReactivePulseDir: 0
+    - _RedChReactivePulseOffset: 0
+    - _RedChReactivePulseScale: 127
+    - _ReflectionMask: 4
+    - _ReflectionMaskChannel: 0
+    - _ReplaceBaseColor: 0
+    - _SheetSize: 3
+    - _ShellWidth: 1
+    - _ShowAlphaAL: 0
+    - _ShowAlphaGlow: 0
+    - _ShowBlueAL: 0
+    - _ShowBlueGlow: 0
+    - _ShowConstellation: 0
+    - _ShowDreamweave: 0
+    - _ShowEffects: 1
+    - _ShowEmissAL: 0
+    - _ShowEmissGlow: 0
+    - _ShowEmission: 0
+    - _ShowEmission01: 0
+    - _ShowEmission02: 0
+    - _ShowEmission03: 0
+    - _ShowEmission04: 0
+    - _ShowEmissionMain: 0
+    - _ShowGreenAL: 0
+    - _ShowGreenGlow: 0
+    - _ShowLighting: 0
+    - _ShowMain: 1
+    - _ShowMaps: 0
+    - _ShowOutline: 0
+    - _ShowRainbow: 0
+    - _ShowRedAL: 0
+    - _ShowRedGlow: 0
+    - _ShowStarshell: 0
+    - _ShowStarshine: 1
+    - _ShowTileDiscard: 0
+    - _SizeClip: 1
+    - _SmoothnessTextureChannel: 0
+    - _SourceBlendRGB: 1
+    - _SparkleSize: 0.03
+    - _SpecularHighlights: 1
+    - _SpecularMask: 4
+    - _SpecularMaskChannel: 0
+    - _SpecularTintMap: 4
+    - _SrcBlend: 1
+    - _StarShellSparkleScale: 64
+    - _StarShellSparkleSpeed: 0.1
+    - _StarShineEnable: 1
+    - _StardustBaseColor: 0
+    - _StardustHeightCh: 0
+    - _StardustHeightMap: 4
+    - _StardustHeightScale: 0
+    - _StarshellChannel: 0
+    - _StarshellDensity: 1.8
+    - _StarshellEnable: 0
+    - _StarshellMask: 4
+    - _StarshellUV: 0
+    - _StarshineBaseColor: 0
+    - _StarshineChannel: 0
+    - _StarshineIntensity: 1.82
+    - _StarshineMask: 2
+    - _StarshineMetallic: 0.847
+    - _StarshineSpeed: 0.1
+    - _StencilReference: 87
+    - _TileDiscardUV: 0
+    - _UDIMDiscardRow0_0: 0
+    - _UDIMDiscardRow0_1: 0
+    - _UDIMDiscardRow0_2: 0
+    - _UDIMDiscardRow0_3: 0
+    - _UDIMDiscardRow1_0: 0
+    - _UDIMDiscardRow1_1: 0
+    - _UDIMDiscardRow1_2: 0
+    - _UDIMDiscardRow1_3: 0
+    - _UDIMDiscardRow2_0: 0
+    - _UDIMDiscardRow2_1: 0
+    - _UDIMDiscardRow2_2: 0
+    - _UDIMDiscardRow2_3: 0
+    - _UDIMDiscardRow3_0: 0
+    - _UDIMDiscardRow3_1: 0
+    - _UDIMDiscardRow3_2: 0
+    - _UDIMDiscardRow3_3: 0
+    - _UVSec: 0
+    - _UVTileDissolveAlpha_Row0_0: 0
+    - _UVTileDissolveAlpha_Row0_1: 0
+    - _UVTileDissolveAlpha_Row0_2: 0
+    - _UVTileDissolveAlpha_Row0_3: 0
+    - _UVTileDissolveAlpha_Row1_0: 0
+    - _UVTileDissolveAlpha_Row1_1: 0
+    - _UVTileDissolveAlpha_Row1_2: 0
+    - _UVTileDissolveAlpha_Row1_3: 0
+    - _UVTileDissolveAlpha_Row2_0: 0
+    - _UVTileDissolveAlpha_Row2_1: 0
+    - _UVTileDissolveAlpha_Row2_2: 0
+    - _UVTileDissolveAlpha_Row2_3: 0
+    - _UVTileDissolveAlpha_Row3_0: 0
+    - _UVTileDissolveAlpha_Row3_1: 0
+    - _UVTileDissolveAlpha_Row3_2: 0
+    - _UVTileDissolveAlpha_Row3_3: 0
+    - _UseFallback0: 0
+    - _UseFallback1: 0
+    - _UseFallback2: 0
+    - _UseFallback3: 0
+    - _Workflow: 0
+    - _ZWrite: 1
+    m_Colors:
+    - _AlphaChGlowFallback: {r: 1, g: 1, b: 1, a: 0}
+    - _AlphaChGlowRadialCenter: {r: 0.5, g: 0.5, b: 0, a: 0}
+    - _AlphaChGlowTint: {r: 1, g: 1, b: 1, a: 0}
+    - _AlphaChReactiveRadialCenter: {r: 0.5, g: 0.5, b: 0, a: 0}
+    - _AlphaChReactiveTint: {r: 1, g: 1, b: 1, a: 0}
+    - _AnimatedOffsetDirectionalMap: {r: 0, g: 0, b: 0, a: 0}
+    - _AnimatedOffsetEmssion: {r: 0, g: 0, b: 0, a: 0}
+    - _AnimatedOffsetMainTex: {r: 0, g: 0, b: 0, a: 0}
+    - _AnimatedOffsetMaskMap01: {r: 0, g: 0, b: 0, a: 0}
+    - _AnimatedOffsetMaskMap02: {r: 0, g: 0, b: 0, a: 0}
+    - _AnimatedOffsetMaskMap03: {r: 0, g: 0, b: 0, a: 0}
+    - _AnimatedOffsetMaskMap04: {r: 0, g: 0, b: 0, a: 0}
+    - _BlueChGlowFallback: {r: 1, g: 1, b: 1, a: 0}
+    - _BlueChGlowRadialCenter: {r: 0.5, g: 0.5, b: 0, a: 0}
+    - _BlueChGlowTint: {r: 1, g: 1, b: 1, a: 0}
+    - _BlueChReactiveRadialCenter: {r: 0.5, g: 0.5, b: 0, a: 0}
+    - _BlueChReactiveTint: {r: 1, g: 1, b: 1, a: 0}
+    - _Color: {r: 0.098039225, g: 0.20784315, b: 0.34509805, a: 1}
+    - _ConstellationColor: {r: 1, g: 1, b: 1, a: 1}
+    - _ConstellationSpeed: {r: 0.2, g: 0.2, b: 0, a: 0}
+    - _DreamWeaveOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _DreamWeaveScale: {r: 1, g: 1, b: 0, a: 0}
+    - _DreamweaveAngle: {r: 0, g: 1, b: 0, a: 0}
+    - _DreamweaveColor01: {r: 0, g: 0.9388051, b: 1, a: 1}
+    - _DreamweaveColor02: {r: 0.9390857, g: 0.3070933, b: 0.9716981, a: 1}
+    - _DreamweaveDistortionSpeed: {r: 0, g: 0, b: 0, a: 0}
+    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _EmissionGlowRadialCenter: {r: 0.5, g: 0.5, b: 0, a: 0}
+    - _EmissionGlowTint: {r: 1, g: 1, b: 1, a: 0}
+    - _EmissionReactiveRadialCenter: {r: 0.5, g: 0.5, b: 0, a: 0}
+    - _EmissionReactiveTint: {r: 1, g: 1, b: 1, a: 0}
+    - _FavoriteColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+    - _GreenChGlowFallback: {r: 1, g: 1, b: 1, a: 0}
+    - _GreenChGlowRadialCenter: {r: 0.5, g: 0.5, b: 0, a: 0}
+    - _GreenChGlowTint: {r: 1, g: 1, b: 1, a: 0}
+    - _GreenChReactiveRadialCenter: {r: 0.5, g: 0.5, b: 0, a: 0}
+    - _GreenChReactiveTint: {r: 1, g: 1, b: 1, a: 0}
+    - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
+    - _OutlineColor1: {r: 0, g: 0, b: 0, a: 1}
+    - _RainbowRadialCenter: {r: 0.5, g: 0.5, b: 0, a: 0}
+    - _RedChGlowFallback: {r: 1, g: 1, b: 1, a: 0}
+    - _RedChGlowRadialCenter: {r: 0.5, g: 0.5, b: 0, a: 0}
+    - _RedChGlowTint: {r: 1, g: 1, b: 1, a: 0}
+    - _RedChReactiveRadialCenter: {r: 0.5, g: 0.5, b: 0, a: 0}
+    - _RedChReactiveTint: {r: 1, g: 1, b: 1, a: 0}
+    - _SpecularTint: {r: 1, g: 1, b: 1, a: 1}
+    - _StarshellColor: {r: 5.992157, g: 5.992157, b: 5.992157, a: 1}
+    - _StarshellSpeed: {r: 0.0025, g: 0.0025, b: 0, a: 0}
+    - _StarshineColor: {r: 1, g: 0.5966608, b: 0.56700003, a: 1}
+    - _StarshineScale: {r: 1, g: 0.36, b: 1, a: 0}
+  m_BuildTextureStacks: []

@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78b2425a2284af743826c689403a4924, type: 3}
+  m_Name: okLab2lrgb
+  m_EditorClassIdentifier: 
+  m_functionInfo: "// Made with Amplify Shader Editor v1.9.8.1\n// Available at the
+    Unity Asset Store - http://u3d.as/y3X \n/*ASEBEGIN\nVersion=19801\nNode;AmplifyShaderEditor.SimpleMultiplyOpNode;2;-678.3,0.6000977;Inherit;False;2;2;0;FLOAT3;0,0,0;False;1;FLOAT3x3;0,0,0,1,1,1,1,0,1;False;1;FLOAT3;0\nNode;AmplifyShaderEditor.Matrix3X3Node;3;-630.3,112.6001;Inherit;False;Constant;_lab2cone;lab2cone;3;0;Create;True;0;0;0;False;0;False;4.076742,-1.268438,-0.004196086,-3.307712,2.609757,-0.7034186,0.2309699,-0.3413194,1.707615;0;1;FLOAT3x3;0\nNode;AmplifyShaderEditor.SimpleMultiplyOpNode;4;-486.3,-15.3999;Inherit;False;3;3;0;FLOAT3;0,0,0;False;1;FLOAT3;0,0,0;False;2;FLOAT3;0,0,0;False;1;FLOAT3;0\nNode;AmplifyShaderEditor.SimpleMultiplyOpNode;5;-294.3,-15.3999;Inherit;False;2;2;0;FLOAT3;0,0,0;False;1;FLOAT3x3;0,0,0,1,1,1,1,0,1;False;1;FLOAT3;0\nNode;AmplifyShaderEditor.Matrix3X3Node;1;-997.3,71.6001;Inherit;False;Constant;_cone2lrgb;cone2lrgb;3;0;Create;True;0;0;0;False;0;False;1,1,1,0.3963378,-0.1055613,-0.08948418,0.2158038,-0.06385417,-1.291486;0;1;FLOAT3x3;0\nNode;AmplifyShaderEditor.FunctionInput;6;-904.9386,-15.62009;Inherit;False;Lab;3;0;False;1;0;FLOAT3;0,0,0;False;1;FLOAT3;0\nNode;AmplifyShaderEditor.FunctionOutput;0;-91,-17;Inherit;True;True;-1;RGB;0;True;1;0;FLOAT3;0,0,0;False;1;FLOAT3;0\nWireConnection;2;0;6;0\nWireConnection;2;1;1;0\nWireConnection;4;0;2;0\nWireConnection;4;1;2;0\nWireConnection;4;2;2;0\nWireConnection;5;0;4;0\nWireConnection;5;1;3;0\nWireConnection;0;0;5;0\nASEEND*/\n//CHKSM=57F376FC1E4043FDA9A7A02383776848C0CF79ED"
+  m_functionName: 
+  m_description: 
+  m_additionalIncludes:
+    m_additionalIncludes: []
+    m_outsideIncludes: []
+  m_additionalPragmas:
+    m_additionalPragmas: []
+    m_outsidePragmas: []
+  m_additionalDirectives:
+    m_validData: 0
+    m_isDirty: 0
+    m_moduleName: ' Additional Directives'
+    m_independentModule: 1
+    m_customEdited: 0
+    m_additionalDirectives: []
+    m_shaderFunctionDirectives: []
+    m_nativeDirectives: []
+    m_nativeDirectivesIndex: -1
+    m_nativeDirectivesFoldout: 0
+    m_directivesSaveItems: []
+  m_nodeCategory: 3
+  m_headerStyle: 0
+  m_headerColor: {r: 1, g: 0.4, b: 0, a: 1}
+  m_customNodeCategory: 
+  m_previewPosition: 0
+  m_hidden: 0
+  m_url: 

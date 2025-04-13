@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78b2425a2284af743826c689403a4924, type: 3}
+  m_Name: Screen Depth. But its good
+  m_EditorClassIdentifier: 
+  m_functionInfo: "// Made with Amplify Shader Editor v1.9.1.3\n// Available at the
+    Unity Asset Store - http://u3d.as/y3X \n/*ASEBEGIN\nVersion=19103\nNode;AmplifyShaderEditor.FunctionSwitch;27;-2.177675,-89.34151;Inherit;False;Perspective
+    Fix;True;1;2;-1;In 0;In 1;Object;-1;9;0;FLOAT;0;False;1;FLOAT;0;False;2;FLOAT;0;False;3;FLOAT;0;False;4;FLOAT;0;False;5;FLOAT;0;False;6;FLOAT;0;False;7;FLOAT;0;False;8;FLOAT;0;False;1;FLOAT;0\nNode;AmplifyShaderEditor.ScreenPosInputsNode;5;-1269.48,-257.9059;Inherit;False;0;False;0;5;FLOAT4;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4\nNode;AmplifyShaderEditor.DotProductOpNode;24;-1180.105,-43.10051;Inherit;False;2;0;FLOAT4;0,0,0,0;False;1;FLOAT4;0,0,0,0;False;1;FLOAT;0\nNode;AmplifyShaderEditor.ScreenDepthNode;6;-900.4429,-257.1986;Inherit;False;1;False;1;0;FLOAT4;0,0,0,0;False;1;FLOAT;0\nNode;AmplifyShaderEditor.CustomExpressionNode;20;-617.1057,-68.1007;Inherit;False;\treturn
+    1.0 / (inputDepth/UNITY_MATRIX_P._34 + Correction)@;1;Create;2;True;inputDepth;FLOAT;0;In;;Inherit;False;True;Correction;FLOAT;0;In;;Inherit;False;CorrectedLinearEyeDepth;True;False;0;;False;2;0;FLOAT;0;False;1;FLOAT;0;False;1;FLOAT;0\nNode;AmplifyShaderEditor.SimpleDivideOpNode;21;-800.1055,-44.10051;Inherit;False;2;0;FLOAT;0;False;1;FLOAT;0;False;1;FLOAT;0\nNode;AmplifyShaderEditor.UnityObjToClipPosHlpNode;22;-1391.105,24.89964;Inherit;False;1;0;FLOAT3;0,0,0;False;5;FLOAT4;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4\nNode;AmplifyShaderEditor.VertexToFragmentNode;23;-1043.105,-43.10051;Inherit;False;False;False;1;0;FLOAT;0;False;1;FLOAT;0\nNode;AmplifyShaderEditor.CustomExpressionNode;25;-1682.097,-43.50243;Inherit;False;\t\t\tfloat
+    x1 = -UNITY_MATRIX_P._31/(UNITY_MATRIX_P._11*UNITY_MATRIX_P._34)@$\t\t\tfloat
+    x2 = -UNITY_MATRIX_P._32/(UNITY_MATRIX_P._22*UNITY_MATRIX_P._34)@$\t\t\treturn
+    float4(x1, x2, 0, UNITY_MATRIX_P._33/UNITY_MATRIX_P._34 + x1*UNITY_MATRIX_P._13
+    + x2*UNITY_MATRIX_P._23)@;4;Create;0;CalculateFrustrumCorrection;True;False;0;;False;0;1;FLOAT4;0\nNode;AmplifyShaderEditor.FunctionInput;4;-1066.043,-257.5564;Inherit;False;ScreenPos;4;1;False;1;0;FLOAT4;0,0,0,0;False;1;FLOAT4;0\nNode;AmplifyShaderEditor.SimpleDivideOpNode;19;-168.3081,15.71281;Inherit;False;2;0;FLOAT;0;False;1;FLOAT;0;False;1;FLOAT;0\nNode;AmplifyShaderEditor.FunctionOutput;0;287.5369,-87.92529;Inherit;False;True;-1;Depth;0;False;1;0;FLOAT;0;False;1;FLOAT;0\nNode;AmplifyShaderEditor.DotProductOpNode;18;-599.7168,166.0841;Inherit;False;2;0;FLOAT3;0,0,0;False;1;FLOAT3;0,0,0;False;1;FLOAT;0\nNode;AmplifyShaderEditor.ViewMatrixNode;14;-914.0948,307.7524;Inherit;False;0;1;FLOAT4x4;0\nNode;AmplifyShaderEditor.Vector3Node;15;-958.1087,166.5963;Inherit;False;Constant;_Vector2;Vector
+    1;4;0;Create;True;0;0;0;False;0;False;0,0,1;0,0,0;0;4;FLOAT3;0;FLOAT;1;FLOAT;2;FLOAT;3\nNode;AmplifyShaderEditor.SimpleMultiplyOpNode;16;-756.246,210.6134;Inherit;False;2;2;0;FLOAT3;0,0,0;False;1;FLOAT4x4;0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1;False;1;FLOAT3;0\nNode;AmplifyShaderEditor.ViewDirInputsCoordNode;17;-790.3752,56.95321;Inherit;False;World;False;0;4;FLOAT3;0;FLOAT;1;FLOAT;2;FLOAT;3\nNode;AmplifyShaderEditor.PosVertexDataNode;26;-1733.788,31.56904;Inherit;False;0;0;5;FLOAT3;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4\nNode;AmplifyShaderEditor.FunctionInput;28;-1558.557,27.01529;Inherit;False;VertexPos;3;0;False;1;0;FLOAT3;0,0,0;False;1;FLOAT3;0\nWireConnection;27;0;20;0\nWireConnection;27;1;19;0\nWireConnection;24;0;25;0\nWireConnection;24;1;22;0\nWireConnection;6;0;4;0\nWireConnection;20;0;6;0\nWireConnection;20;1;21;0\nWireConnection;21;0;23;0\nWireConnection;21;1;22;4\nWireConnection;22;0;28;0\nWireConnection;23;0;24;0\nWireConnection;4;0;5;0\nWireConnection;19;0;20;0\nWireConnection;19;1;18;0\nWireConnection;0;0;27;0\nWireConnection;18;0;17;0\nWireConnection;18;1;16;0\nWireConnection;16;0;15;0\nWireConnection;16;1;14;0\nWireConnection;28;0;26;0\nASEEND*/\n//CHKSM=751289E293B09D9DC75101F44E98C9377CDEC9AA"
+  m_functionName: 
+  m_description: 'It''s just screen depth except now...  It''s good.
+
+
+    Works
+    in mirrors!'
+  m_additionalIncludes:
+    m_additionalIncludes: []
+    m_outsideIncludes: []
+  m_additionalPragmas:
+    m_additionalPragmas: []
+    m_outsidePragmas: []
+  m_additionalDirectives:
+    m_validData: 0
+    m_isDirty: 0
+    m_moduleName: ' Additional Directives'
+    m_independentModule: 1
+    m_customEdited: 0
+    m_additionalDirectives: []
+    m_shaderFunctionDirectives: []
+    m_nativeDirectives: []
+    m_nativeDirectivesIndex: -1
+    m_nativeDirectivesFoldout: 0
+    m_directivesSaveItems: []
+  m_nodeCategory: 1
+  m_headerStyle: 0
+  m_headerColor: {r: 1, g: 0.4, b: 0, a: 1}
+  m_customNodeCategory: 
+  m_previewPosition: 0
+  m_hidden: 0
+  m_url: 
