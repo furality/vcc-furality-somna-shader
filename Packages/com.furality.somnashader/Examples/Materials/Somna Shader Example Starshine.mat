@@ -337,14 +337,14 @@ Material:
     - _ShowGreenAL: 0
     - _ShowGreenGlow: 0
     - _ShowLighting: 0
-    - _ShowMain: 1
+    - _ShowMain: 0
     - _ShowMaps: 0
     - _ShowOutline: 0
     - _ShowRainbow: 0
     - _ShowRedAL: 0
     - _ShowRedGlow: 0
     - _ShowStarshell: 0
-    - _ShowStarshine: 1
+    - _ShowStarshine: 0
     - _ShowTileDiscard: 0
     - _SizeClip: 1
     - _SmoothnessTextureChannel: 0
@@ -362,6 +362,7 @@ Material:
     - _StardustHeightCh: 0
     - _StardustHeightMap: 4
     - _StardustHeightScale: 0
+    - _StardustZwrite: 1
     - _StarshellChannel: 0
     - _StarshellDensity: 1.8
     - _StarshellEnable: 0
@@ -369,9 +370,11 @@ Material:
     - _StarshellUV: 0
     - _StarshineBaseColor: 0
     - _StarshineChannel: 0
-    - _StarshineIntensity: 1.82
+    - _StarshineIntensity: 1.91
     - _StarshineMask: 2
     - _StarshineMetallic: 0.847
+    - _StarshineNormalIntensity: 1
+    - _StarshineSmoothness: 0.82
     - _StarshineSpeed: 0.1
     - _StencilReference: 87
     - _TileDiscardUV: 0

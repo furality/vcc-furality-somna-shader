@@ -2,7 +2,7 @@
 
 using UnityEngine;
 using UnityEditor;
-using System.Collections.Generic;
+
 
 public class SomnaShaderUI : ShaderGUI
 {
@@ -10,6 +10,7 @@ public class SomnaShaderUI : ShaderGUI
     private Texture2D logoImage;
     private bool showMainProperties;
     MaterialEditor editor;
+    MaterialProperty[] properties;
     Material target;
 
     //Shader locations
@@ -50,41 +51,15 @@ public class SomnaShaderUI : ShaderGUI
         Transparent = 2
     }
 
-    private readonly Dictionary<string, MaterialProperty> props = new Dictionary<string, MaterialProperty>();
-
-    private void GrabProps(MaterialProperty[] properties)
-    {
-        props.Clear();
-        if (properties == null) return;
-        foreach (var prop in properties)
-        {
-            if (prop != null && !props.ContainsKey(prop.name))
-            {
-                props.Add(prop.name, prop);
-            }
-        }
-    }
-
-    bool FloatToBool (float value) => value == 1;
-
-
-    bool runOnce = true;
-
     //This is where the GUI is drawn
     public override void OnGUI(
         MaterialEditor editor, MaterialProperty[] properties
     )
     {
-        if (runOnce)
-        {
-            runOnce = false;
-            GrabProps(properties);
-        }
         this.editor = editor;
-        //this.properties = properties;
+        this.properties = properties;
         this.target = editor.target as Material;
         string workflow = "_Workflow";
-
 
         if (!this.target.IsKeywordEnabled("_BLEND_OFF") &&
             !this.target.IsKeywordEnabled("_ALPHATEST_ON") &&
@@ -172,8 +147,7 @@ public class SomnaShaderUI : ShaderGUI
     //Modify FindProperty to only require a string
     MaterialProperty FindProperty(string name)
     {
-        return props.ContainsKey(name) ? props[name] : null;
-        //return FindProperty(name, properties);
+        return FindProperty(name, properties);
     }
 
     //Function to create labels for properties
@@ -189,24 +163,24 @@ public class SomnaShaderUI : ShaderGUI
     void DoMainProperties()
     {
         //Convert material int to bool
-        // bool ShowMain;
-        // string tog = "_ShowMain";
-        // string title = "Main";
+        bool ShowMain;
+        string tog = "_ShowMain";
+        string title = "Main";
 
-        // if (target.GetFloat(tog) == 1)
-        // {
-        //     ShowMain = true;
-        // }
-        // else
-        // {
-        //     ShowMain = false;
-        // }
+        if (target.GetFloat(tog) == 1)
+        {
+            ShowMain = true;
+        }
+        else
+        {
+            ShowMain = false;
+        }
 
         //Create foldout
-        //ShowMain = EditorGUILayout.Foldout(ShowMain, title, true, EditorStyles.foldoutHeader);
-        if (EditorGUILayout.Foldout(FloatToBool(target.GetFloat("_ShowMain")), "Main", true, EditorStyles.foldoutHeader))
+        ShowMain = EditorGUILayout.Foldout(ShowMain, title, true, EditorStyles.foldoutHeader);
+        if (ShowMain)
         {
-            target.SetFloat("_ShowMain", 1);
+            target.SetFloat(tog, 1);
 
             GUILayout.Space(10);
             DoMainTex();
@@ -228,7 +202,7 @@ public class SomnaShaderUI : ShaderGUI
         }
         else
         {
-            target.SetFloat("_ShowMain", 0);
+            target.SetFloat(tog, 0);
         }
     }
 
@@ -236,7 +210,7 @@ public class SomnaShaderUI : ShaderGUI
     void DoSpecialEffects()
     {
         //Convert material int to bool
-        //bool ShowMain;
+        bool ShowMain;
         bool ShowSecond;
         bool ShowThird;
         bool ShowOutline;
@@ -258,14 +232,14 @@ public class SomnaShaderUI : ShaderGUI
         string title6 = "Rainbow";
         string title7 = "Constellation";
 
-        // if (target.GetFloat(tog) == 1)
-        // {
-        //     ShowMain = true;
-        // }
-        // else
-        // {
-        //     ShowMain = false;
-        // }
+        if (target.GetFloat(tog) == 1)
+        {
+            ShowMain = true;
+        }
+        else
+        {
+            ShowMain = false;
+        }
 
         if (target.GetFloat(tog2) == 1)
         {
@@ -332,7 +306,8 @@ public class SomnaShaderUI : ShaderGUI
         colorFoldout.onActive.textColor = Color.green;
 
         //Create foldout
-        if (EditorGUILayout.Foldout(target.GetFloat(tog) == 1, title, true, EditorStyles.foldoutHeader))
+        ShowMain = EditorGUILayout.Foldout(ShowMain, title, true, EditorStyles.foldoutHeader);
+        if (ShowMain)
         {
             target.SetFloat(tog, 1);
             EditorGUI.indentLevel += 2;
@@ -366,6 +341,8 @@ public class SomnaShaderUI : ShaderGUI
                 {
                     editor.ShaderProperty(baseColor, "Use Base Color");
                     editor.ColorProperty(color, "Color");
+                    editor.ShaderProperty(FindProperty("_StarshineNormalIntensity"), "Normal Intensity");
+                    editor.ShaderProperty(FindProperty("_StarshineSmoothness"), "Smoothness");
                     editor.ShaderProperty(metallic, "Metallic");
                     editor.ShaderProperty(intensity, "Intensity");
                     editor.FloatProperty(speed, "Speed");
@@ -1227,8 +1204,8 @@ public class SomnaShaderUI : ShaderGUI
         }
 
         //Create foldout
-        //ShowMain = EditorGUILayout.Foldout(ShowMain, title, true, EditorStyles.foldoutHeader);
-        if (EditorGUILayout.Foldout(ShowMain, title, true, EditorStyles.foldoutHeader))
+        ShowMain = EditorGUILayout.Foldout(ShowMain, title, true, EditorStyles.foldoutHeader);
+        if (ShowMain)
         {
             target.SetFloat(tog, 1);
 
