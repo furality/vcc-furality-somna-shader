@@ -1,5 +1,5 @@
 ﻿#if UNITY_EDITOR
-//#define DEBUG
+//#define FURALITY_SHADER_UI_DEBUG
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
@@ -53,7 +53,7 @@ public class SomnaShaderUI : ShaderGUI
     {
         if (_foldoutState.ContainsKey(name))
         {
-            #if DEBUG
+            #if FURALITY_SHADER_UI_DEBUG
             Debug.LogError("Furality Shader UI: FoldState already contains key");
             #endif
             return;
@@ -65,12 +65,12 @@ public class SomnaShaderUI : ShaderGUI
     {
         if (_foldoutState.ContainsKey(name))
         {
-            #if DEBUG
+            #if FURALITY_SHADER_UI_DEBUG
             Debug.Log($"Furality Shader GUI foldState: {name} {_foldoutState[name]}");
             #endif
             return _foldoutState[name];
         }
-        #if DEBUG
+        #if FURALITY_SHADER_UI_DEBUG
         Debug.LogError($"Furality Shader GUI: {name} not found on foldState");
         #endif
         return false;
@@ -83,8 +83,12 @@ public class SomnaShaderUI : ShaderGUI
             _foldoutState.Add(name, state);
             return state;
         }
-        _foldoutState[name] = state;
-        return _foldoutState[name];
+        else if (_foldoutState.ContainsKey(name))
+        {
+            _foldoutState[name] = state;
+            return _foldoutState[name];
+        } 
+        return false;
     }
 
     void SaveFoldStates(Material material)
@@ -272,7 +276,9 @@ public class SomnaShaderUI : ShaderGUI
     //Modify FindProperty to only require a string
     MaterialProperty FindProperty(string name)
     {
-        return props[name];
+        if (props.ContainsKey(name))
+            return props[name];
+        return null;
         // return FindProperty(name, properties);
     }
 
@@ -523,6 +529,7 @@ public class SomnaShaderUI : ShaderGUI
 
     private static bool showStarshell = false;
     private static bool showConstellation = false;
+    private int sheetSize = 1;
     void Starshell()
     {
         showStarshell = EditorGUILayout.Foldout(showStarshell, "Stardust", true, styleCheck(target.GetFloat("_StarshellEnable") == 1));
@@ -590,7 +597,13 @@ public class SomnaShaderUI : ShaderGUI
                         //Properties Here
                         editor.TexturePropertySingleLine(MakeLabel("SpriteSheet"), FindProperty("_Constellation"), FindProperty("_ConstellationColor"));
                         editor.TextureScaleOffsetProperty(FindProperty("_Constellation"));
-                        editor.ShaderProperty(FindProperty("_SheetSize"), "Sheet Size (square)");
+                        //editor.ShaderProperty(FindProperty("_SheetSize"), "Sheet Size (square)");
+                        if (sheetSize < 1)
+                        {
+                            sheetSize = 1;
+                        }
+                        sheetSize = EditorGUILayout.IntField("Sheet Size (square)", sheetSize);
+                        target.SetInteger("_SheetSize", sheetSize);
                         editor.ShaderProperty(FindProperty("_ConstellationAmount"), "Amount");
                         editor.ShaderProperty(FindProperty("_ConstellationSpeed"), "Speed");
                         editor.ShaderProperty(FindProperty("_FadeFreqency"), "Fade Freqency");
@@ -2460,6 +2473,11 @@ public class SomnaShaderUI : ShaderGUI
     void DoMaskClip()
     {
         MaterialProperty clip = FindProperty("_MaskClipValue");
+        BlendMode mode = (BlendMode)target.GetFloat("_BlendModeIndex");
+        if (mode == BlendMode.Opaque)
+        {
+            target.SetFloat("_MaskClipValue", 1f);
+        }
 
         editor.ShaderProperty(clip, MakeLabel("Mask Clip"));
     }
