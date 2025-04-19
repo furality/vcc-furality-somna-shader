@@ -1,8 +1,10 @@
 ﻿#if UNITY_EDITOR
+//#define DEBUG
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System;
+using UnityEngine.Rendering;
 
 
 public class SomnaShaderUI : ShaderGUI
@@ -13,16 +15,6 @@ public class SomnaShaderUI : ShaderGUI
     MaterialEditor editor;
     MaterialProperty[] properties;
     Material target;
-
-    //Shader locations
-    Shader defaultOpaque = Shader.Find("Furality/Somna Shader/Somna Toon");
-    Shader defaultCutout = Shader.Find("Furality/Somna Shader/Somna Toon");
-    Shader defaultTransparent = Shader.Find("Furality/Somna Shader/Somna Toon");
-    Shader noOutlineOpaque = Shader.Find("Furality/Somna Shader/Somna Toon");
-    Shader noOutlineCutout = Shader.Find("Furality/Somna Shader/Somna Toon");
-    Shader noOutlineTransparent = Shader.Find("Furality/Somna Shader/Somna Toon");
-
-    bool enableOutline = false;
 
     //Enums
     enum Zone
@@ -53,21 +45,35 @@ public class SomnaShaderUI : ShaderGUI
     }
 
     private GUIStyle selected;
+    private GUIStyle label;
     Dictionary<string, MaterialProperty> props = new Dictionary<string, MaterialProperty>();
     Dictionary<string, bool> _foldoutState = new Dictionary<string, bool>();
 
     void InitializeFoldState(string name)
     {
         if (_foldoutState.ContainsKey(name))
+        {
+            #if DEBUG
+            Debug.LogError("Furality Shader UI: FoldState already contains key");
+            #endif
             return;
+        }
         _foldoutState.Add(name, false);
     }
 
     bool GetFoldState(string name)
     {
-        bool value = false;
-        _foldoutState.TryGetValue(name, out value);
-        return value;
+        if (_foldoutState.ContainsKey(name))
+        {
+            #if DEBUG
+            Debug.Log($"Furality Shader GUI foldState: {name} {_foldoutState[name]}");
+            #endif
+            return _foldoutState[name];
+        }
+        #if DEBUG
+        Debug.LogError($"Furality Shader GUI: {name} not found on foldState");
+        #endif
+        return false;
     }
 
     bool SetFoldState(string name, bool state)
@@ -84,27 +90,23 @@ public class SomnaShaderUI : ShaderGUI
     void SaveFoldStates(Material material)
     {
         var data = new FoldoutStates();
-        if (_foldoutState == null)
-        {
-            return;
-        }
         foreach (var state in _foldoutState)
         {
             data.SetState(state.Key, state.Value);
         }
         string serializedStates = JsonUtility.ToJson(data);
         material.SetOverrideTag("_FoldoutStates", serializedStates);
-        EditorUtility.SetDirty(material);
     }
 
     void LoadFoldStates(Material material)
     {
-        if (material.GetTag("_FoldoutStates", false) == null)
+        string serializedData = material.GetTag("_FoldoutStates", false);
+        if (string.IsNullOrEmpty(serializedData))
         {
+            SaveFoldStates(material);
             return;
         }
-        string serializedData = material.GetTag("_FoldoutStates", false);
-        if (!string.IsNullOrEmpty(serializedData))
+        else
         {
             try
             {
@@ -116,11 +118,9 @@ public class SomnaShaderUI : ShaderGUI
                 }
             } catch (Exception e)
             {
-                Debug.LogError($"Error while trying to deserialize foldout state data for material {material.name}");
+                Debug.LogError($"Furality Shader UI: Exception {e.Message} while trying to deserialize foldout state data for material {material.name}");
                 _foldoutState.Clear();
             }
-        } else {
-            _foldoutState.Clear();
         }
     }
 
@@ -135,6 +135,15 @@ public class SomnaShaderUI : ShaderGUI
         selected.onFocused.textColor = Color.blue;
         selected.active.textColor = Color.green;
         selected.onActive.textColor = Color.green;
+        label = new GUIStyle(EditorStyles.miniLabel);
+        label.alignment = TextAnchor.MiddleCenter;
+        InitializeFoldState("showMain");
+        InitializeFoldState("showMaskMaps");
+        InitializeFoldState("showEffects");
+        InitializeFoldState("showLighting");
+        InitializeFoldState("showEmission");
+        InitializeFoldState("showTileDiscard");
+        InitializeFoldState("showRenderSettings");
     }
 
     GUIStyle styleCheck(bool enable)
@@ -228,7 +237,13 @@ public class SomnaShaderUI : ShaderGUI
 
         DoTileDiscard();
 
+        RenderSettings();
+
         if (GUI.changed)
+        {
+            SaveFoldStates(target);
+        }
+        if (EditorGUI.EndChangeCheck())
         {
             SaveFoldStates(target);
         }
@@ -257,8 +272,8 @@ public class SomnaShaderUI : ShaderGUI
     //Modify FindProperty to only require a string
     MaterialProperty FindProperty(string name)
     {
-        //return props[name];
-        return FindProperty(name, properties);
+        return props[name];
+        // return FindProperty(name, properties);
     }
 
     //Function to create labels for properties
@@ -273,6 +288,7 @@ public class SomnaShaderUI : ShaderGUI
     private static bool showMain = false;
     void DoMainProperties()
     {
+        EditorGUI.BeginChangeCheck();
         showMain = GetFoldState("showMain");
         SetFoldState("showMain", EditorGUILayout.Foldout(showMain, "Main", true, EditorStyles.foldoutHeader));
         if (showMain)
@@ -295,6 +311,7 @@ public class SomnaShaderUI : ShaderGUI
 
             DoMisc();
         }
+        EditorGUI.EndChangeCheck(); 
     }
 
     private static bool showRainbow = false;
@@ -692,6 +709,7 @@ public class SomnaShaderUI : ShaderGUI
     private static bool showTileDiscard = false;
     void DoTileDiscard()
     {
+        EditorGUI.BeginChangeCheck();
         showTileDiscard = GetFoldState("showTileDiscard");
         //Create foldout
         SetFoldState("showTileDiscard", EditorGUILayout.Foldout(showTileDiscard, "UV Tile Discard", true, EditorStyles.foldoutHeader));
@@ -791,6 +809,7 @@ public class SomnaShaderUI : ShaderGUI
 
             EditorGUI.indentLevel -= 2;
         }
+        EditorGUI.EndChangeCheck();
     }
 
     //Create foldout that contains Emission properties
@@ -801,6 +820,7 @@ public class SomnaShaderUI : ShaderGUI
     private static bool showEmission4 = false;
     void DoGlobalEmission()
     {
+        EditorGUI.BeginChangeCheck();
         showEmission = GetFoldState("showEmission");
         //Create foldout
         SetFoldState("showEmission", EditorGUILayout.Foldout(showEmission, "Emissions", true, EditorStyles.foldoutHeader));
@@ -856,6 +876,7 @@ public class SomnaShaderUI : ShaderGUI
 
             EditorGUI.indentLevel -= 1;
         }
+        EditorGUI.EndChangeCheck();
     }
 
     void DoEmissionGeneric(
@@ -897,7 +918,8 @@ public class SomnaShaderUI : ShaderGUI
     {
         //Convert material int to bool
         EditorGUI.BeginChangeCheck();
-        showMainEmission = EditorGUILayout.Foldout(showMainEmission, "Main Emission", true, styleCheck(target.GetFloat("_EnableEmission") == 1));
+        showMainEmission = GetFoldState("showMainEmission");
+        SetFoldState("showMainEmission", EditorGUILayout.Foldout(showMainEmission, "Main Emission", true, styleCheck(target.GetFloat("_EnableEmission") == 1)));
         if (showMainEmission)
         {
             GUILayout.BeginVertical("box");
@@ -917,12 +939,14 @@ public class SomnaShaderUI : ShaderGUI
             EditorGUI.EndChangeCheck();
 
         }
+        EditorGUI.EndChangeCheck();
     }
 
     //Create foldout that contains mask maps
     private static bool showMaskMaps = false;
     void DoTextureMaps()
     {
+        EditorGUI.BeginChangeCheck();
         showMaskMaps = GetFoldState("showMaskMaps");
         //Create foldout
         SetFoldState("showMaskMaps", EditorGUILayout.Foldout(showMaskMaps, "Masks/Maps", true, EditorStyles.foldoutHeader));
@@ -952,6 +976,7 @@ public class SomnaShaderUI : ShaderGUI
             MaterialProperty offsetProp = FindProperty("_AnimatedOffsetDirectionalMap");
             AnimatedOffsetProp(offsetProp);
         }
+        EditorGUI.EndChangeCheck();
     }
 
     //Create foldout that contains lighting properties
@@ -959,6 +984,7 @@ public class SomnaShaderUI : ShaderGUI
     void DoLightingProperties()
     {
         //Create foldout
+        EditorGUI.BeginChangeCheck();
         showLighting = GetFoldState("showLighting");
         SetFoldState("showLighting", EditorGUILayout.Foldout(showLighting, "Lighting", true, EditorStyles.foldoutHeader));
         if (showLighting)
@@ -1051,107 +1077,7 @@ public class SomnaShaderUI : ShaderGUI
             //EditorGUILayout.LabelField("Specular Glint", EditorStyles.boldLabel);
             //editor.ShaderProperty(FindProperty("_SpecularGlint"), "Enable Glint", 2);
         }
-    }
-
-    //Create Foldout that contains Luma Glow properties
-    private static bool showLumaProps = false;
-    void DoLumaProperties()
-    {
-        MaterialProperty glowMask = FindProperty("_GlowMask");
-
-        //Create foldout
-        showLumaProps = EditorGUILayout.Foldout(showLumaProps, "Luma Glow/AudioLink", true, EditorStyles.foldoutHeader);
-        if (showLumaProps)
-        {
-            DoGlowMask();
-
-            if (target.GetFloat("_EnableEmission") == 1)
-            {
-                DoEmissionGlow();
-                DoEmissionAL();
-            }
-
-            if (enableOutline)
-            {
-                DoOutlineGlow();
-                DoOutlineAL();
-            }
-
-
-            if (glowMask.textureValue != null)
-            {
-                MaterialProperty redTog = FindProperty("_EnableRedChannel");
-                EditorGUI.indentLevel += 2;
-                editor.ShaderProperty(redTog, MakeLabel("Enable Red Channel", "Use Luma Glow with Glow Mask(R)"));
-                EditorGUI.indentLevel -= 2;
-                if (target.GetFloat("_EnableRedChannel") == 1)
-                {
-                    DoRedChGlow();
-                    DoRedChAL();
-                }
-
-                MaterialProperty greenTog = FindProperty("_EnableGreenChannel");
-                EditorGUI.indentLevel += 2;
-                editor.ShaderProperty(greenTog, MakeLabel("Enable Green Channel", "Use Luma Glow with Glow Mask(G)"));
-                EditorGUI.indentLevel -= 2;
-                if (target.GetFloat("_EnableGreenChannel") == 1)
-                {
-                    DoGreenChGlow();
-                    DoGreenChAL();
-                }
-
-                MaterialProperty blueTog = FindProperty("_EnableBlueChannel");
-                EditorGUI.indentLevel += 2;
-                editor.ShaderProperty(blueTog, MakeLabel("Enable Blue Channel", "Use Luma Glow with Glow Mask(B)"));
-                EditorGUI.indentLevel -= 2;
-                if (target.GetFloat("_EnableBlueChannel") == 1)
-                {
-                    DoBlueChGlow();
-                    DoBlueChAL();
-                }
-
-                MaterialProperty alphaTog = FindProperty("_EnableAlphaChannel");
-                EditorGUI.indentLevel += 2;
-                editor.ShaderProperty(alphaTog, MakeLabel("Enable Alpha Channel", "Use Luma Glow with Glow Mask(A)"));
-                EditorGUI.indentLevel -= 2;
-                if (target.GetFloat("_EnableAlphaChannel") == 1)
-                {
-                    DoAlphaChGlow();
-                    DoAlphaChAL();
-                }
-
-            }
-
-            if (target.GetFloat("_EnableSparkles") == 1)
-            {
-                DoSparkleGlow();
-                DoSparkleAL();
-            }
-
-        }
-    }
-
-    //Create Foldout that contains Effect properties
-    private static bool showEffects2 = false;
-    void DoEffects()
-    {
-        MaterialProperty mask = FindProperty("_EffectMask");
-
-        showEffects2 = EditorGUILayout.Foldout(showEffects2, "Special Effects", true, EditorStyles.foldoutHeader);
-        if (showEffects2)
-        {
-            //target.SetFloat("_ShowEffects", 1);
-            DoEffectMask();
-            DoSparkles();
-            DoRainbow();
-            DoIridescence();
-
-            if (enableOutline)
-            {
-                DoOutlines2();
-            }
-
-        }
+        EditorGUI.EndChangeCheck();
     }
 
     //Main Texture func
@@ -2542,151 +2468,94 @@ public class SomnaShaderUI : ShaderGUI
     {
         BlendMode mode = (BlendMode)target.GetFloat("_BlendModeIndex");
 
-        if (target.shader == defaultOpaque || target.shader == noOutlineOpaque)
-        {
-            mode = BlendMode.Opaque;
-        }
-
-        else if (target.shader == defaultCutout || target.shader == noOutlineCutout)
-        {
-            mode = BlendMode.Cutout;
-        }
-
-        else if (target.shader == defaultTransparent || target.shader == noOutlineTransparent)
-        {
-            mode = BlendMode.Transparent;
-        }
-
         EditorGUI.BeginChangeCheck();
         mode = (BlendMode)EditorGUILayout.EnumPopup(new GUIContent("Rendering Mode"), mode);
 
         if (EditorGUI.EndChangeCheck())
         {
+            Debug.Log($"Furality Shader GUI: {mode}");
             editor.RegisterPropertyChangeUndo("Blend Mode");
             target.SetFloat("_BlendModeIndex", (float)mode);
 
-            if (enableOutline)
+            if (target.GetFloat("_BlendModeIndex") == 0)
             {
-                if (target.GetFloat("_BlendModeIndex") == 0)
-                {
-                    editor.SetShader(defaultOpaque);
-                }
-
-                else if (target.GetFloat("_BlendModeIndex") == 1)
-                {
-                    editor.SetShader(defaultCutout);
-                }
-
-                else if (target.GetFloat("_BlendModeIndex") == 2)
-                {
-                    editor.SetShader(defaultTransparent);
-                }
+                this.target.SetOverrideTag("RenderType", "Opaque");
+                this.target.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry;
+                this.target.SetInt("_SourceBlendRGB", (int)UnityEngine.Rendering.BlendMode.One);
+                this.target.SetInt("_DestinationBlendRGB", (int)UnityEngine.Rendering.BlendMode.Zero);
+                this.target.SetInt("_ZWrite", 1);
+                this.target.DisableKeyword("_ALPHATEST_ON");
+                //this.target.SetInt("_ALPHATEST", 0);
+                this.target.DisableKeyword("_ALHPABLEND_ON");
+                //this.target.SetInt("_ALPHABLEND", 0);
+                this.target.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                //this.target.SetInt("_ALPHAPREMULTIPLY", 0);
+                this.target.EnableKeyword("_BLEND_OFF");
             }
-
-            if (enableOutline)
+            else if (target.GetFloat("_BlendModeIndex") == 1)
             {
-                if (target.GetFloat("_BlendModeIndex") == 0)
-                {
-                    this.target.SetOverrideTag("RenderType", "Opaque");
-                    this.target.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry;
-                    this.target.SetInt("_SourceBlendRGB", (int)UnityEngine.Rendering.BlendMode.One);
-                    this.target.SetInt("_DestinationBlendRGB", (int)UnityEngine.Rendering.BlendMode.Zero);
-                    this.target.SetInt("_ZWrite", 1);
-                    this.target.DisableKeyword("_ALPHATEST_ON");
-                    //this.target.SetInt("_ALPHATEST", 0);
-                    this.target.DisableKeyword("_ALHPABLEND_ON");
-                    //this.target.SetInt("_ALPHABLEND", 0);
-                    this.target.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                    //this.target.SetInt("_ALPHAPREMULTIPLY", 0);
-                    this.target.EnableKeyword("_BLEND_OFF");
-                }
-                else if (target.GetFloat("_BlendModeIndex") == 1)
-                {
-                    this.target.SetOverrideTag("RenderType", "TransparentCutout");
-                    this.target.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
-                    this.target.SetInt("_SourceBlendRGB", (int)UnityEngine.Rendering.BlendMode.One);
-                    this.target.SetInt("_DestinationBlendRGB", (int)UnityEngine.Rendering.BlendMode.Zero);
-                    this.target.SetInt("_ZWrite", 1);
-                    this.target.EnableKeyword("_ALPHATEST_ON");
-                    //this.target.SetInt("_ALPHATEST", 1);
-                    this.target.DisableKeyword("_ALPHABLEND_ON");
-                    //this.target.SetInt("_ALPHABLEND", 0);
-                    this.target.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                    //this.target.SetInt("_ALPHAPREMULTIPLY", 0);
-                    this.target.DisableKeyword("_BLEND_OFF");
-                }
-
-                else if (target.GetFloat("_BlendModeIndex") == 2)
-                {
-                    this.target.SetOverrideTag("RenderType", "Transparent");
-                    this.target.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-                    this.target.SetInt("_SourceBlendRGB", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                    this.target.SetInt("_DestinationBlendRGB", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                    this.target.SetInt("_ZWrite", 1);
-                    this.target.DisableKeyword("_ALPHATEST_ON");
-                    //this.target.SetInt("_ALPHATEST", 0);
-                    this.target.EnableKeyword("_ALPHABLEND_ON");
-                    //this.target.SetInt("_ALPHABLEND", 0);
-                    this.target.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                    //this.target.SetInt("_ALPHAPREMULTIPLY", 0);
-                    this.target.DisableKeyword("_BLEND_OFF");
-                }
+                this.target.SetOverrideTag("RenderType", "TransparentCutout");
+                this.target.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
+                this.target.SetInt("_SourceBlendRGB", (int)UnityEngine.Rendering.BlendMode.One);
+                this.target.SetInt("_DestinationBlendRGB", (int)UnityEngine.Rendering.BlendMode.Zero);
+                this.target.SetInt("_ZWrite", 1);
+                this.target.EnableKeyword("_ALPHATEST_ON");
+                //this.target.SetInt("_ALPHATEST", 1);
+                this.target.DisableKeyword("_ALPHABLEND_ON");
+                //this.target.SetInt("_ALPHABLEND", 0);
+                this.target.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                //this.target.SetInt("_ALPHAPREMULTIPLY", 0);
+                this.target.DisableKeyword("_BLEND_OFF");
+            }
+            else if (target.GetFloat("_BlendModeIndex") == 2)
+            {
+                this.target.SetOverrideTag("RenderType", "Transparent");
+                this.target.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+                this.target.SetInt("_SourceBlendRGB", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                this.target.SetInt("_DestinationBlendRGB", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                this.target.SetInt("_ZWrite", 1);
+                this.target.DisableKeyword("_ALPHATEST_ON");
+                //this.target.SetInt("_ALPHATEST", 0);
+                this.target.EnableKeyword("_ALPHABLEND_ON");
+                //this.target.SetInt("_ALPHABLEND", 0);
+                this.target.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                //this.target.SetInt("_ALPHAPREMULTIPLY", 0);
+                this.target.DisableKeyword("_BLEND_OFF");
             }
         }
     }
 
-    void DoOutlineToggle()
+    bool showRenderSettings = false;
+    int renderQueueOffset = 0;
+    float sliderValue = 0;
+    void RenderSettings()
     {
-        if (target.shader == defaultTransparent || target.shader == defaultOpaque || target.shader == defaultCutout)
-        {
-            enableOutline = true;
-        }
-        else
-        {
-            enableOutline = false;
-        }
-
-        EditorGUI.indentLevel += 2;
         EditorGUI.BeginChangeCheck();
-        EditorGUILayout.Toggle(new GUIContent("Enable Outlines"), enableOutline);
 
-        if (EditorGUI.EndChangeCheck())
+        showRenderSettings = GetFoldState("showRenderSettings");
+        SetFoldState("showRenderSettings", EditorGUILayout.Foldout(showRenderSettings, "Render Settings", true, EditorStyles.foldoutHeader));
+        if (showRenderSettings)
         {
-            editor.RegisterPropertyChangeUndo("Enable Outline");
-            if (!enableOutline)
+            EditorGUI.indentLevel++;
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Render Queue Offset:");
+            EditorGUILayout.BeginVertical();
+            renderQueueOffset = EditorGUILayout.IntSlider(renderQueueOffset, -400, 400, GUILayout.ExpandWidth(true));
+            EditorGUILayout.LabelField($"QUEUE: {target.renderQueue}", label, GUILayout.ExpandWidth(true));
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.EndHorizontal();
+            if (target.renderQueue == (int)RenderQueue.Geometry)
             {
-                if ((BlendMode)target.GetFloat("_BlendModeIndex") == BlendMode.Transparent)
-                {
-                    editor.SetShader(defaultTransparent);
-                }
-                else if ((BlendMode)target.GetFloat("_BlendModeIndex") == BlendMode.Cutout)
-                {
-                    editor.SetShader(defaultCutout);
-                }
-                else if ((BlendMode)target.GetFloat("_BlendModeIndex") == BlendMode.Opaque)
-                {
-                    editor.SetShader(defaultOpaque);
-                }
-                enableOutline = true;
-            }
-            else
+                target.renderQueue = (int)RenderQueue.Transparent + renderQueueOffset;
+            } else if (target.renderQueue == (int)RenderQueue.AlphaTest)
             {
-                if ((BlendMode)target.GetFloat("_BlendModeIndex") == BlendMode.Transparent)
-                {
-                    editor.SetShader(noOutlineTransparent);
-                }
-                else if ((BlendMode)target.GetFloat("_BlendModeIndex") == BlendMode.Cutout)
-                {
-                    editor.SetShader(noOutlineCutout);
-                }
-                else if ((BlendMode)target.GetFloat("_BlendModeIndex") == BlendMode.Opaque)
-                {
-                    editor.SetShader(noOutlineOpaque);
-                }
-                enableOutline = false;
+                target.renderQueue = (int)RenderQueue.AlphaTest + renderQueueOffset;
+            } else {
+                target.renderQueue = (int)RenderQueue.Transparent + renderQueueOffset;
             }
+            EditorGUI.indentLevel--;
         }
-        EditorGUI.indentLevel -= 2;
+        EditorGUI.EndChangeCheck();
     }
 }
 
