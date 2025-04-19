@@ -1,8 +1,7 @@
 ﻿#if UNITY_EDITOR
+
 using UnityEngine;
 using UnityEditor;
-using System.Collections.Generic;
-using System;
 
 
 public class SomnaShaderUI : ShaderGUI
@@ -52,100 +51,6 @@ public class SomnaShaderUI : ShaderGUI
         Transparent = 2
     }
 
-    private GUIStyle selected;
-    Dictionary<string, MaterialProperty> props = new Dictionary<string, MaterialProperty>();
-    Dictionary<string, bool> _foldoutState = new Dictionary<string, bool>();
-
-    void InitializeFoldState(string name)
-    {
-        if (_foldoutState.ContainsKey(name))
-            return;
-        _foldoutState.Add(name, false);
-    }
-
-    bool GetFoldState(string name)
-    {
-        bool value = false;
-        _foldoutState.TryGetValue(name, out value);
-        return value;
-    }
-
-    bool SetFoldState(string name, bool state)
-    {
-        if (!_foldoutState.ContainsKey(name))
-        {
-            _foldoutState.Add(name, state);
-            return state;
-        }
-        _foldoutState[name] = state;
-        return _foldoutState[name];
-    }
-
-    void SaveFoldStates(Material material)
-    {
-        var data = new FoldoutStates();
-        if (_foldoutState == null)
-        {
-            return;
-        }
-        foreach (var state in _foldoutState)
-        {
-            data.SetState(state.Key, state.Value);
-        }
-        string serializedStates = JsonUtility.ToJson(data);
-        material.SetOverrideTag("_FoldoutStates", serializedStates);
-        EditorUtility.SetDirty(material);
-    }
-
-    void LoadFoldStates(Material material)
-    {
-        if (material.GetTag("_FoldoutStates", false) == null)
-        {
-            return;
-        }
-        string serializedData = material.GetTag("_FoldoutStates", false);
-        if (!string.IsNullOrEmpty(serializedData))
-        {
-            try
-            {
-                FoldoutStates data = JsonUtility.FromJson<FoldoutStates>(serializedData);
-                _foldoutState.Clear();
-                for (int i = 0; i < data.foldoutNames.Count && i < data.foldoutValues.Count; i++)
-                {
-                    _foldoutState[data.foldoutNames[i]] = data.foldoutValues[i];
-                }
-            } catch (Exception e)
-            {
-                Debug.LogError($"Error while trying to deserialize foldout state data for material {material.name}");
-                _foldoutState.Clear();
-            }
-        } else {
-            _foldoutState.Clear();
-        }
-    }
-
-    public SomnaShaderUI() : base()
-    { 
-        selected = new GUIStyle(EditorStyles.foldoutHeader);
-        selected.normal.textColor = Color.green; // Change to desired color
-        selected.onNormal.textColor = Color.green;
-        selected.hover.textColor = Color.green;
-        selected.onHover.textColor = Color.green;
-        selected.focused.textColor = Color.blue;
-        selected.onFocused.textColor = Color.blue;
-        selected.active.textColor = Color.green;
-        selected.onActive.textColor = Color.green;
-    }
-
-    GUIStyle styleCheck(bool enable)
-    {
-        if (enable)
-            return selected;
-        else
-            return EditorStyles.foldoutHeader;
-    }
-
-
     //This is where the GUI is drawn
     public override void OnGUI(
         MaterialEditor editor, MaterialProperty[] properties
@@ -154,17 +59,6 @@ public class SomnaShaderUI : ShaderGUI
         this.editor = editor;
         this.properties = properties;
         this.target = editor.target as Material;
-        LoadFoldStates(target);
-        if (props.Count != properties.Length)
-        {
-            props.Clear();
-            for (int i = 0; i < properties.Length; i++)
-            {
-                if (properties[i] == null || props.ContainsKey(properties[i].name))
-                    continue;
-                props.Add(properties[i].name, properties[i]);
-            }
-        }
         string workflow = "_Workflow";
 
         if (!this.target.IsKeywordEnabled("_BLEND_OFF") &&
@@ -228,10 +122,6 @@ public class SomnaShaderUI : ShaderGUI
 
         DoTileDiscard();
 
-        if (GUI.changed)
-        {
-            SaveFoldStates(target);
-        }
     }
 
     //Entirely functions below this point
@@ -257,7 +147,6 @@ public class SomnaShaderUI : ShaderGUI
     //Modify FindProperty to only require a string
     MaterialProperty FindProperty(string name)
     {
-        //return props[name];
         return FindProperty(name, properties);
     }
 
@@ -270,13 +159,29 @@ public class SomnaShaderUI : ShaderGUI
         return staticLabel;
     }
 
-    private static bool showMain = false;
+    //Create foldout that contains main properties
     void DoMainProperties()
     {
-        showMain = GetFoldState("showMain");
-        SetFoldState("showMain", EditorGUILayout.Foldout(showMain, "Main", true, EditorStyles.foldoutHeader));
-        if (showMain)
+        //Convert material int to bool
+        bool ShowMain;
+        string tog = "_ShowMain";
+        string title = "Main";
+
+        if (target.GetFloat(tog) == 1)
         {
+            ShowMain = true;
+        }
+        else
+        {
+            ShowMain = false;
+        }
+
+        //Create foldout
+        ShowMain = EditorGUILayout.Foldout(ShowMain, title, true, EditorStyles.foldoutHeader);
+        if (ShowMain)
+        {
+            target.SetFloat(tog, 1);
+
             GUILayout.Space(10);
             DoMainTex();
             GUILayout.BeginVertical("box");
@@ -295,408 +200,571 @@ public class SomnaShaderUI : ShaderGUI
 
             DoMisc();
         }
-    }
-
-    private static bool showRainbow = false;
-    void Rainbow()
-    {
-        showRainbow = EditorGUILayout.Foldout(showRainbow, "Rainbow", true, styleCheck(target.GetFloat("_RainbowEnable") == 1));
-
-        if (showRainbow)
+        else
         {
-            EditorGUI.indentLevel += 1;
-
-            MaterialProperty enable = FindProperty("_RainbowEnable");
-
-            EditorGUI.BeginChangeCheck();
-            editor.ShaderProperty(enable, "Enable");
-            //Disable Rainbow Outline if Rainbow is disabled
-            if (EditorGUI.EndChangeCheck())
-            {
-                if (target.GetFloat("_RainbowEnable") == 0)
-                {
-                    target.SetFloat("_RainbowOutline", 0);
-                    target.SetFloat("_RainbowStardust", 0);
-                }
-            }
-
-            if (target.GetFloat("_RainbowEnable") == 1)
-            {
-                //Turn on Outline when property is checked
-                EditorGUI.BeginChangeCheck();
-                editor.ShaderProperty(FindProperty("_RainbowOutline"), "Rainbow Outline");
-                if (EditorGUI.EndChangeCheck())
-                {
-                    if (target.GetFloat("_RainbowOutline") == 1)
-                    {
-                        target.SetFloat("_Outline1Enable", 1);
-                        target.EnableKeyword("_OUTLINE1_ON");
-                    }
-                }
-
-                //Turn on Outline when property is checked
-                EditorGUI.BeginChangeCheck();
-                editor.ShaderProperty(FindProperty("_RainbowStardust"), "Rainbow Stardust");
-                if (EditorGUI.EndChangeCheck())
-                {
-                    if (target.GetFloat("_RainbowStardust") == 1)
-                    {
-                        target.SetFloat("_StarshellEnable", 1);
-                        target.EnableKeyword("_STARSHELL_ON");
-                    }
-                }
-
-                editor.ShaderProperty(FindProperty("_RainbowUVMode"), "UV Mode");
-                editor.ShaderProperty(FindProperty("_RainbowScale"), "Scale");
-                editor.ShaderProperty(FindProperty("_RainbowHueRange"), "Hue Range");
-                editor.ShaderProperty(FindProperty("_RainbowHue"), "Hue");
-                editor.ShaderProperty(FindProperty("_RainbowSaturation"), "Saturation");
-                editor.ShaderProperty(FindProperty("_RainbowValue"), "Value");
-                editor.ShaderProperty(FindProperty("_RainbowEmission"), "Emission");
-                editor.ShaderProperty(FindProperty("_RainbowRotation"), "Rotation");
-                editor.ShaderProperty(FindProperty("_RainbowSpeed"), "Speed");
-
-                if (target.GetFloat("_RainbowUVMode") > 0)
-                {
-                    if(target.GetFloat("_RainbowUVMode") < 3)
-                    {
-                        editor.ShaderProperty(FindProperty("_RainbowRadialCenter"), "Radial Center");
-                        if(target.GetFloat("_RainbowUVMode") == 2)
-                        {
-                            editor.ShaderProperty(FindProperty("_RainbowSpiralCurve"), "Spiral Curve");
-                        }
-                    }
-                }
-
-                GUILayout.BeginVertical("box");
-
-                EditorGUI.indentLevel -= 2;
-                EditorGUI.indentLevel += 1;
-                EditorGUILayout.LabelField("Mask", EditorStyles.miniBoldLabel);
-                EditorGUI.indentLevel -= 1;
-                editor.ShaderProperty(FindProperty("_RainbowMask"), "Map", 2);
-                editor.ShaderProperty(FindProperty("_RainbowChannel"), "Channel", 2);
-                EditorGUI.indentLevel += 2;
-
-                GUILayout.EndVertical();
-            }
-            EditorGUI.indentLevel -= 1;
-        }
-    }
-
-
-    private static bool showDreamweave = false;
-    void Dreamweave()
-    {
-        showDreamweave = EditorGUILayout.Foldout(showDreamweave, "Dreamweave", true, styleCheck(target.GetFloat("_DreamweaveEnable") == 1));
-
-        if (showDreamweave)
-        {
-            EditorGUI.indentLevel += 1;
-
-            MaterialProperty enable = FindProperty("_DreamweaveEnable");
-
-            MaterialProperty color01 = FindProperty("_DreamweaveColor01");
-            MaterialProperty color02 = FindProperty("_DreamweaveColor02");
-            MaterialProperty angle = FindProperty("_DreamweaveAngle");
-            MaterialProperty pos = FindProperty("_DreamweavePos");
-            MaterialProperty posSpeed = FindProperty("_DreamweavePosSpeed");
-            MaterialProperty normScale = FindProperty("_DreamweaveNormalScale");
-            MaterialProperty disSpeed = FindProperty("_DreamweaveDistortionSpeed");
-            MaterialProperty swapFreq = FindProperty("_DreamweaveSwapFrequency");
-            MaterialProperty swapSpeed = FindProperty("_DreamweaveSwapSpeed");
-            MaterialProperty softness = FindProperty("_DreamweaveSoftness");
-            MaterialProperty offset = FindProperty("_DreamweaveColorOffset");
-            MaterialProperty texOffset = FindProperty("_DreamWeaveOffset");
-            MaterialProperty texScale = FindProperty("_DreamWeaveScale");
-            MaterialProperty emission = FindProperty("_DreamweaveEmission");
-
-            editor.ShaderProperty(enable, "Enable");
-
-            if (target.GetFloat("_DreamweaveEnable") == 1)
-            {
-
-                //GUILayout.BeginHorizontal();
-                MaterialProperty normTex = FindProperty("_DetailNormal");
-                editor.TexturePropertySingleLine(MakeLabel("Detail Normal", "Adds extra detail to normals"), normTex, normScale);
-                //editor.ShaderProperty(FindProperty("_DetailUV"), "UV Channel", 2);
-                //EditorGUI.indentLevel += 2;
-                //editor.TextureScaleOffsetProperty(normTex);
-                //EditorGUI.indentLevel -= 2;
-                editor.ShaderProperty(texScale, "Texture Scale");
-                editor.ShaderProperty(texOffset, "Texture Offset");
-                //GUILayout.EndHorizontal();
-
-                editor.ShaderProperty(disSpeed, "Detail Animated Offset");
-                editor.ShaderProperty(angle, "Angle");
-                editor.ShaderProperty(color01, "Color 01");
-                editor.ShaderProperty(color02, "Color 02");
-                editor.ShaderProperty(offset, "Color Offset");
-                editor.ShaderProperty(FindProperty("_DreamweaveGridThickness"), "Grid Thickness");
-                editor.ShaderProperty(FindProperty("_DreamweaveGridTile"), "Grid Scale");
-                editor.ShaderProperty(emission, "Emission Intensity");
-                editor.ShaderProperty(softness, "Softness");
-                editor.ShaderProperty(swapSpeed, "Color Swap Speed");
-                editor.ShaderProperty(swapFreq, "Color Swap Frequency");
-                editor.ShaderProperty(pos, "Position");
-                editor.ShaderProperty(posSpeed, "Position Speed");
-
-                GUILayout.BeginVertical("box");
-
-                EditorGUI.indentLevel -= 2;
-                EditorGUI.indentLevel += 1;
-                EditorGUILayout.LabelField("Mask", EditorStyles.miniBoldLabel);
-                EditorGUI.indentLevel -= 1;
-                editor.ShaderProperty(FindProperty("_DreamweaveMask"), "Map", 2);
-                editor.ShaderProperty(FindProperty("_DreamweaveChannel"), "Channel", 2);
-                EditorGUI.indentLevel += 2;
-
-                GUILayout.EndVertical();
-            }
-            EditorGUI.indentLevel -= 1;
-        }
-    }
-
-    private static bool showStarshine = false;
-    void Starshine()
-    {
-        //Starshine Properties
-        showStarshine = EditorGUILayout.Foldout(showStarshine, "Starshine", true, styleCheck(target.GetFloat("_StarShineEnable") == 1));
-
-        if (showStarshine)
-        {
-            EditorGUI.indentLevel += 1;
-
-            MaterialProperty enable = FindProperty("_StarShineEnable");
-            MaterialProperty color = FindProperty("_StarshineColor");
-            MaterialProperty intensity = FindProperty("_StarshineIntensity");
-            MaterialProperty speed = FindProperty("_StarshineSpeed");
-            MaterialProperty scale = FindProperty("_StarshineScale");
-            MaterialProperty baseColor = FindProperty("_StarshineBaseColor");
-            MaterialProperty metallic = FindProperty("_StarshineMetallic");
-
-            editor.ShaderProperty(enable, "Enable");
-
-            if (target.GetFloat("_StarShineEnable") == 1)
-            {
-                editor.ShaderProperty(baseColor, "Use Base Color");
-                editor.ColorProperty(color, "Color");
-                editor.ShaderProperty(FindProperty("_StarshineNormalIntensity"), "Normal Intensity");
-                editor.ShaderProperty(FindProperty("_StarshineSmoothness"), "Smoothness");
-                editor.ShaderProperty(metallic, "Metallic");
-                editor.ShaderProperty(intensity, "Intensity");
-                editor.FloatProperty(speed, "Speed");
-                editor.ShaderProperty(scale, "Scale");
-
-                GUILayout.BeginVertical("box");
-
-                EditorGUI.indentLevel -= 2;
-                EditorGUI.indentLevel += 1;
-                EditorGUILayout.LabelField("Mask", EditorStyles.miniBoldLabel);
-                EditorGUI.indentLevel -= 1;
-                editor.ShaderProperty(FindProperty("_StarshineMask"), "Map", 2);
-                editor.ShaderProperty(FindProperty("_StarshineChannel"), "Channel", 2);
-                EditorGUI.indentLevel += 2;
-
-                GUILayout.EndVertical();
-            }
-            EditorGUI.indentLevel -= 1;
-        }
-    }
-
-    private static bool showStarshell = false;
-    private static bool showConstellation = false;
-    void Starshell()
-    {
-        showStarshell = EditorGUILayout.Foldout(showStarshell, "Stardust", true, styleCheck(target.GetFloat("_StarshellEnable") == 1));
-
-        if (showStarshell)
-        {
-            EditorGUI.indentLevel += 1;
-
-            MaterialProperty enable = FindProperty("_StarshellEnable");
-
-            EditorGUI.BeginChangeCheck();
-            editor.ShaderProperty(enable, "Enable");
-            editor.ShaderProperty(FindProperty("_StardustZwrite"), "Zwrite");
-            //Disable Rainbow Stardust if Stardust is disabled
-            if (EditorGUI.EndChangeCheck())
-            {
-                if (target.GetFloat("_StarshellEnable") == 0)
-                {
-                    target.SetFloat("_RainbowStardust", 0);
-                }
-            }
-
-            if (target.GetFloat("_StarshellEnable") == 1)
-            {
-                //Turn on Rainbow when property is checked
-                EditorGUI.BeginChangeCheck();
-                editor.ShaderProperty(FindProperty("_RainbowStardust"), "Rainbow Stardust");
-                if (EditorGUI.EndChangeCheck())
-                {
-                    if (target.GetFloat("_RainbowStardust") == 1)
-                    {
-                        target.SetFloat("_RainbowEnable", 1);
-                        target.EnableKeyword("_RAINBOW_ON");
-                    }
-                }
-
-                editor.ShaderProperty(FindProperty("_StardustBaseColor"), "Use Base Color");
-                //editor.ShaderProperty(FindProperty("_SizeClip"), "Screenspace Size Clip");
-                editor.ShaderProperty(FindProperty("_StarshellColor"), "Color");
-                editor.ShaderProperty(FindProperty("_ShellWidth"), "Size");
-                editor.ShaderProperty(FindProperty("_StarshellDensity"), "Sparkle Amount");
-                editor.ShaderProperty(FindProperty("_SparkleSize"), "Sparkle Size");
-                editor.ShaderProperty(FindProperty("_StarShellSparkleScale"), "Sparkle Scale");
-                editor.ShaderProperty(FindProperty("_StarShellSparkleSpeed"), "Sparkle Speed");
-                editor.ShaderProperty(FindProperty("_EdgeFade"), "Edge Fade");
-                editor.ShaderProperty(FindProperty("_StardustHeightScale"), "Height Scale");
-                editor.ShaderProperty(FindProperty("_StarshellSpeed"), "Speed");
-                editor.ShaderProperty(FindProperty("_StarshellUV"), "UV Channel");
-                editor.ShaderProperty(FindProperty("_StardustHeightMap"), "Heightmap");
-                editor.ShaderProperty(FindProperty("_StardustHeightCh"), "Heightmap Channel");
-
-                showConstellation = EditorGUILayout.Foldout(showConstellation, "Constellation", true, styleCheck(target.GetFloat("_ConstellationEnable") == 1));
-
-                if (showConstellation)
-                {
-                    EditorGUI.indentLevel += 1;
-
-                    //GUILayout.BeginVertical("box");
-                    MaterialProperty enable2 = FindProperty("_ConstellationEnable");
-                    editor.ShaderProperty(enable2, "Enable");
-
-                    if (target.GetFloat("_ConstellationEnable") == 1)
-                    {
-
-                        //Properties Here
-                        editor.TexturePropertySingleLine(MakeLabel("SpriteSheet"), FindProperty("_Constellation"), FindProperty("_ConstellationColor"));
-                        editor.TextureScaleOffsetProperty(FindProperty("_Constellation"));
-                        editor.ShaderProperty(FindProperty("_SheetSize"), "Sheet Size (square)");
-                        editor.ShaderProperty(FindProperty("_ConstellationAmount"), "Amount");
-                        editor.ShaderProperty(FindProperty("_ConstellationSpeed"), "Speed");
-                        editor.ShaderProperty(FindProperty("_FadeFreqency"), "Fade Freqency");
-
-                        //EditorGUI.indentLevel -= 2;
-                        //EditorGUI.indentLevel += 1;
-                        //EditorGUILayout.LabelField("Mask", EditorStyles.miniBoldLabel);
-                        //EditorGUI.indentLevel -= 1;
-                        //editor.ShaderProperty(FindProperty("_ConstellationMask"), "Map", 2);
-                        // editor.ShaderProperty(FindProperty("_ConstellationChannel"), "Channel", 2);
-                        //EditorGUI.indentLevel += 2;
-
-                    }
-                    EditorGUI.indentLevel -= 1;
-                    //GUILayout.EndVertical();
-                }
-
-                GUILayout.BeginVertical("box");
-
-                EditorGUI.indentLevel -= 2;
-                EditorGUI.indentLevel += 1;
-                EditorGUILayout.LabelField("Mask", EditorStyles.miniBoldLabel);
-                EditorGUI.indentLevel -= 1;
-                editor.ShaderProperty(FindProperty("_StarshellMask"), "Map", 2);
-                editor.ShaderProperty(FindProperty("_StarshellChannel"), "Channel", 2);
-                EditorGUI.indentLevel += 2;
-
-                GUILayout.EndVertical();
-            }
-            EditorGUI.indentLevel -= 1;
-        }
-    }
-
-    private static bool showOutline = false;
-    void Outline()
-    {
-        showOutline = EditorGUILayout.Foldout(showOutline, "Outline", true, styleCheck(target.GetFloat("_Outline1Enable") == 1));
-
-        if (showOutline)
-        {
-            EditorGUI.indentLevel += 1;
-
-            MaterialProperty enable = FindProperty("_Outline1Enable");
-
-            EditorGUI.BeginChangeCheck();
-            editor.ShaderProperty(enable, "Enable");
-            //Disable Rainbow Outline if Outline is disabled
-            if (EditorGUI.EndChangeCheck())
-            {
-                if (target.GetFloat("_Outline1Enable") == 0)
-                {
-                    target.SetFloat("_RainbowOutline", 0);
-                }
-            }
-
-            if (target.GetFloat("_Outline1Enable") == 1)
-            {
-                //Turn on Rainbow when property is checked
-                EditorGUI.BeginChangeCheck();
-                editor.ShaderProperty(FindProperty("_RainbowOutline"), "Rainbow Outline");
-                if (EditorGUI.EndChangeCheck())
-                {
-                    if (target.GetFloat("_RainbowOutline") == 1)
-                    {
-                        target.SetFloat("_RainbowEnable", 1);
-                        target.EnableKeyword("_RAINBOW_ON");
-                    }
-                }
-
-                editor.ShaderProperty(FindProperty("_OutlineColor1"), "Outline Color");
-                editor.ShaderProperty(FindProperty("_OutlineWidth1"), "Outline Width");
-                editor.ShaderProperty(FindProperty("_MaxOutlineWidth1"), "Max Outline Width");
-                editor.ShaderProperty(FindProperty("_StencilReference"), MakeLabel("Stencil Reference", "Set this to something unique"));
-
-                GUILayout.BeginVertical("box");
-
-                EditorGUI.indentLevel -= 2;
-                EditorGUI.indentLevel += 1;
-                EditorGUILayout.LabelField("Mask", EditorStyles.miniBoldLabel);
-                EditorGUI.indentLevel -= 1;
-                editor.ShaderProperty(FindProperty("_OutlineMask"), "Map", 2);
-                editor.ShaderProperty(FindProperty("_OutlineChannel"), "Channel", 2);
-                EditorGUI.indentLevel += 2;
-
-                GUILayout.EndVertical();
-            }
-            EditorGUI.indentLevel -= 1;
+            target.SetFloat(tog, 0);
         }
     }
 
     //Create foldout that contains main properties
-    private static bool showEffects = false;
     void DoSpecialEffects()
     {
-        showEffects = GetFoldState("showEffects");
-        SetFoldState("showEffects", EditorGUILayout.Foldout(showEffects, "Special Effects", true, EditorStyles.foldoutHeader));
-        if (showEffects)
+        //Convert material int to bool
+        bool ShowMain;
+        bool ShowSecond;
+        bool ShowThird;
+        bool ShowOutline;
+        bool ShowStarshell;
+        bool ShowRainbow;
+        bool ShowConstellation;
+        string tog = "_ShowEffects";
+        string tog2 = "_ShowStarshine";
+        string tog3 = "_ShowDreamweave";
+        string tog4 = "_ShowOutline";
+        string tog5 = "_ShowStarshell";
+        string tog6 = "_ShowRainbow";
+        string tog7 = "_ShowConstellation";
+        string title = "Special Effects";
+        string title2 = "Starshine";
+        string title3 = "Dreamweave";
+        string title4 = "Outline";
+        string title5 = "Stardust";
+        string title6 = "Rainbow";
+        string title7 = "Constellation";
+
+        if (target.GetFloat(tog) == 1)
         {
-            EditorGUI.indentLevel += 1;
+            ShowMain = true;
+        }
+        else
+        {
+            ShowMain = false;
+        }
 
-            Starshine();
+        if (target.GetFloat(tog2) == 1)
+        {
+            ShowSecond = true;
+        }
+        else
+        {
+            ShowSecond = false;
+        }
 
-            Dreamweave();
+        if (target.GetFloat(tog3) == 1)
+        {
+            ShowThird = true;
+        }
+        else
+        {
+            ShowThird = false;
+        }
 
-            Starshell();
+        if (target.GetFloat(tog4) == 1)
+        {
+            ShowOutline = true;
+        }
+        else
+        {
+            ShowOutline = false;
+        }
 
-            Outline();
+        if (target.GetFloat(tog5) == 1)
+        {
+            ShowStarshell = true;
+        }
+        else
+        {
+            ShowStarshell = false;
+        }
 
-            Rainbow();
+        if (target.GetFloat(tog6) == 1)
+        {
+            ShowRainbow = true;
+        }
+        else
+        {
+            ShowRainbow = false;
+        }
 
-            EditorGUI.indentLevel -= 1;
+        if (target.GetFloat(tog7) == 1)
+        {
+            ShowConstellation = true;
+        }
+        else
+        {
+            ShowConstellation = false;
+        }
+
+        GUIStyle colorFoldout = new GUIStyle(EditorStyles.foldoutHeader);
+        colorFoldout.normal.textColor = Color.green; // Change to desired color
+        colorFoldout.onNormal.textColor = Color.green;
+        colorFoldout.hover.textColor = Color.green;
+        colorFoldout.onHover.textColor = Color.green;
+        colorFoldout.focused.textColor = Color.green;
+        colorFoldout.onFocused.textColor = Color.green;
+        colorFoldout.active.textColor = Color.green;
+        colorFoldout.onActive.textColor = Color.green;
+
+        //Create foldout
+        ShowMain = EditorGUILayout.Foldout(ShowMain, title, true, EditorStyles.foldoutHeader);
+        if (ShowMain)
+        {
+            target.SetFloat(tog, 1);
+            EditorGUI.indentLevel += 2;
+
+            //Starshine Properties
+            if (target.GetFloat("_StarShineEnable") == 0)
+            {
+                ShowSecond = EditorGUILayout.Foldout(ShowSecond, title2, true, EditorStyles.foldoutHeader);
+            }
+            else
+            {
+                ShowSecond = EditorGUILayout.Foldout(ShowSecond, title2, true, colorFoldout);
+            }
+
+            if (ShowSecond)
+            {
+                target.SetFloat(tog2, 1);
+                EditorGUI.indentLevel += 1;
+
+                MaterialProperty enable = FindProperty("_StarShineEnable");
+                MaterialProperty color = FindProperty("_StarshineColor");
+                MaterialProperty intensity = FindProperty("_StarshineIntensity");
+                MaterialProperty speed = FindProperty("_StarshineSpeed");
+                MaterialProperty scale = FindProperty("_StarshineScale");
+                MaterialProperty baseColor = FindProperty("_StarshineBaseColor");
+                MaterialProperty metallic = FindProperty("_StarshineMetallic");
+
+                editor.ShaderProperty(enable, "Enable");
+
+                if (target.GetFloat("_StarShineEnable") == 1)
+                {
+                    editor.ShaderProperty(baseColor, "Use Base Color");
+                    editor.ColorProperty(color, "Color");
+                    editor.ShaderProperty(FindProperty("_StarshineNormalIntensity"), "Normal Intensity");
+                    editor.ShaderProperty(FindProperty("_StarshineSmoothness"), "Smoothness");
+                    editor.ShaderProperty(metallic, "Metallic");
+                    editor.ShaderProperty(intensity, "Intensity");
+                    editor.FloatProperty(speed, "Speed");
+                    editor.ShaderProperty(scale, "Scale");
+
+                    GUILayout.BeginVertical("box");
+
+                    EditorGUI.indentLevel -= 2;
+                    EditorGUI.indentLevel += 1;
+                    EditorGUILayout.LabelField("Mask", EditorStyles.miniBoldLabel);
+                    EditorGUI.indentLevel -= 1;
+                    editor.ShaderProperty(FindProperty("_StarshineMask"), "Map", 2);
+                    editor.ShaderProperty(FindProperty("_StarshineChannel"), "Channel", 2);
+                    EditorGUI.indentLevel += 2;
+
+                    GUILayout.EndVertical();
+                }
+                EditorGUI.indentLevel -= 1;
+            }
+            else
+            {
+                target.SetFloat(tog2, 0);
+            }
+
+            //Dreamweave Properties
+            if (target.GetFloat("_DreamweaveEnable") == 0)
+            {
+                ShowThird = EditorGUILayout.Foldout(ShowThird, title3, true, EditorStyles.foldoutHeader);
+            }
+            else
+            {
+                ShowThird = EditorGUILayout.Foldout(ShowThird, title3, true, colorFoldout);
+            }
+
+            if (ShowThird)
+            {
+                target.SetFloat(tog3, 1);
+                EditorGUI.indentLevel += 1;
+
+                MaterialProperty enable = FindProperty("_DreamweaveEnable");
+
+                MaterialProperty color01 = FindProperty("_DreamweaveColor01");
+                MaterialProperty color02 = FindProperty("_DreamweaveColor02");
+                MaterialProperty angle = FindProperty("_DreamweaveAngle");
+                MaterialProperty pos = FindProperty("_DreamweavePos");
+                MaterialProperty posSpeed = FindProperty("_DreamweavePosSpeed");
+                MaterialProperty normScale = FindProperty("_DreamweaveNormalScale");
+                MaterialProperty disSpeed = FindProperty("_DreamweaveDistortionSpeed");
+                MaterialProperty swapFreq = FindProperty("_DreamweaveSwapFrequency");
+                MaterialProperty swapSpeed = FindProperty("_DreamweaveSwapSpeed");
+                MaterialProperty softness = FindProperty("_DreamweaveSoftness");
+                MaterialProperty offset = FindProperty("_DreamweaveColorOffset");
+                MaterialProperty texOffset = FindProperty("_DreamWeaveOffset");
+                MaterialProperty texScale = FindProperty("_DreamWeaveScale");
+                MaterialProperty emission = FindProperty("_DreamweaveEmission");
+
+                editor.ShaderProperty(enable, "Enable");
+
+                if (target.GetFloat("_DreamweaveEnable") == 1)
+                {
+
+                    //GUILayout.BeginHorizontal();
+                    MaterialProperty normTex = FindProperty("_DetailNormal");
+                    editor.TexturePropertySingleLine(MakeLabel("Detail Normal", "Adds extra detail to normals"), normTex, normScale);
+                    //editor.ShaderProperty(FindProperty("_DetailUV"), "UV Channel", 2);
+                    //EditorGUI.indentLevel += 2;
+                    //editor.TextureScaleOffsetProperty(normTex);
+                    //EditorGUI.indentLevel -= 2;
+                    editor.ShaderProperty(texScale, "Texture Scale");
+                    editor.ShaderProperty(texOffset, "Texture Offset");
+                    //GUILayout.EndHorizontal();
+
+                    editor.ShaderProperty(disSpeed, "Detail Animated Offset");
+                    editor.ShaderProperty(angle, "Angle");
+                    editor.ShaderProperty(color01, "Color 01");
+                    editor.ShaderProperty(color02, "Color 02");
+                    editor.ShaderProperty(offset, "Color Offset");
+                    editor.ShaderProperty(FindProperty("_DreamweaveGridThickness"), "Grid Thickness");
+                    editor.ShaderProperty(FindProperty("_DreamweaveGridTile"), "Grid Scale");
+                    editor.ShaderProperty(emission, "Emission Intensity");
+                    editor.ShaderProperty(softness, "Softness");
+                    editor.ShaderProperty(swapSpeed, "Color Swap Speed");
+                    editor.ShaderProperty(swapFreq, "Color Swap Frequency");
+                    editor.ShaderProperty(pos, "Position");
+                    editor.ShaderProperty(posSpeed, "Position Speed");
+
+                    GUILayout.BeginVertical("box");
+
+                    EditorGUI.indentLevel -= 2;
+                    EditorGUI.indentLevel += 1;
+                    EditorGUILayout.LabelField("Mask", EditorStyles.miniBoldLabel);
+                    EditorGUI.indentLevel -= 1;
+                    editor.ShaderProperty(FindProperty("_DreamweaveMask"), "Map", 2);
+                    editor.ShaderProperty(FindProperty("_DreamweaveChannel"), "Channel", 2);
+                    EditorGUI.indentLevel += 2;
+
+                    GUILayout.EndVertical();
+                }
+                EditorGUI.indentLevel -= 1;
+            }
+            else
+            {
+                target.SetFloat(tog3, 0);
+            }
+
+            //Starshell Properties
+            if (target.GetFloat("_StarshellEnable") == 0)
+            {
+                ShowStarshell = EditorGUILayout.Foldout(ShowStarshell, title5, true, EditorStyles.foldoutHeader);
+            }
+            else
+            {
+                ShowStarshell = EditorGUILayout.Foldout(ShowStarshell, title5, true, colorFoldout);
+            }
+
+            if (ShowStarshell)
+            {
+                target.SetFloat(tog5, 1);
+                EditorGUI.indentLevel += 1;
+
+                MaterialProperty enable = FindProperty("_StarshellEnable");
+
+                EditorGUI.BeginChangeCheck();
+                editor.ShaderProperty(enable, "Enable");
+                editor.ShaderProperty(FindProperty("_StardustZwrite"), "Zwrite");
+                //Disable Rainbow Stardust if Stardust is disabled
+                if (EditorGUI.EndChangeCheck())
+                {
+                    if (target.GetFloat("_StarshellEnable") == 0)
+                    {
+                        target.SetFloat("_RainbowStardust", 0);
+                    }
+                }
+
+                if (target.GetFloat("_StarshellEnable") == 1)
+                {
+                    //Turn on Rainbow when property is checked
+                    EditorGUI.BeginChangeCheck();
+                    editor.ShaderProperty(FindProperty("_RainbowStardust"), "Rainbow Stardust");
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        if (target.GetFloat("_RainbowStardust") == 1)
+                        {
+                            target.SetFloat("_RainbowEnable", 1);
+                            target.EnableKeyword("_RAINBOW_ON");
+                        }
+                    }
+
+                    editor.ShaderProperty(FindProperty("_StardustBaseColor"), "Use Base Color");
+                    //editor.ShaderProperty(FindProperty("_SizeClip"), "Screenspace Size Clip");
+                    editor.ShaderProperty(FindProperty("_StarshellColor"), "Color");
+                    editor.ShaderProperty(FindProperty("_ShellWidth"), "Size");
+                    editor.ShaderProperty(FindProperty("_StarshellDensity"), "Sparkle Amount");
+                    editor.ShaderProperty(FindProperty("_SparkleSize"), "Sparkle Size");
+                    editor.ShaderProperty(FindProperty("_StarShellSparkleScale"), "Sparkle Scale");
+                    editor.ShaderProperty(FindProperty("_StarShellSparkleSpeed"), "Sparkle Speed");
+                    editor.ShaderProperty(FindProperty("_EdgeFade"), "Edge Fade");
+                    editor.ShaderProperty(FindProperty("_StardustHeightScale"), "Height Scale");
+                    editor.ShaderProperty(FindProperty("_StarshellSpeed"), "Speed");
+                    editor.ShaderProperty(FindProperty("_StarshellUV"), "UV Channel");
+                    editor.ShaderProperty(FindProperty("_StardustHeightMap"), "Heightmap");
+                    editor.ShaderProperty(FindProperty("_StardustHeightCh"), "Heightmap Channel");
+
+                    //Constellation Properties
+                    if (target.GetFloat("_ConstellationEnable") == 0)
+                    {
+                        ShowConstellation = EditorGUILayout.Foldout(ShowConstellation, title7, true, EditorStyles.foldoutHeader);
+                    }
+                    else
+                    {
+                        ShowConstellation = EditorGUILayout.Foldout(ShowConstellation, title7, true, colorFoldout);
+                    }
+
+                    if (ShowConstellation)
+                    {
+                        target.SetFloat(tog7, 1);
+                        EditorGUI.indentLevel += 1;
+
+                        //GUILayout.BeginVertical("box");
+                        MaterialProperty enable2 = FindProperty("_ConstellationEnable");
+                        editor.ShaderProperty(enable2, "Enable");
+
+                        if (target.GetFloat("_ConstellationEnable") == 1)
+                        {
+
+                            //Properties Here
+                            editor.TexturePropertySingleLine(MakeLabel("SpriteSheet"), FindProperty("_Constellation"), FindProperty("_ConstellationColor"));
+                            editor.TextureScaleOffsetProperty(FindProperty("_Constellation"));
+                            editor.ShaderProperty(FindProperty("_SheetSize"), "Sheet Size (square)");
+                            editor.ShaderProperty(FindProperty("_ConstellationAmount"), "Amount");
+                            editor.ShaderProperty(FindProperty("_ConstellationSpeed"), "Speed");
+                            editor.ShaderProperty(FindProperty("_FadeFreqency"), "Fade Freqency");
+
+                            //EditorGUI.indentLevel -= 2;
+                            //EditorGUI.indentLevel += 1;
+                            //EditorGUILayout.LabelField("Mask", EditorStyles.miniBoldLabel);
+                            //EditorGUI.indentLevel -= 1;
+                            //editor.ShaderProperty(FindProperty("_ConstellationMask"), "Map", 2);
+                            // editor.ShaderProperty(FindProperty("_ConstellationChannel"), "Channel", 2);
+                            //EditorGUI.indentLevel += 2;
+
+                        }
+                        EditorGUI.indentLevel -= 1;
+                        //GUILayout.EndVertical();
+                    }
+                    else
+                    {
+                        target.SetFloat(tog7, 0);
+                    }
+
+                    GUILayout.BeginVertical("box");
+
+                    EditorGUI.indentLevel -= 2;
+                    EditorGUI.indentLevel += 1;
+                    EditorGUILayout.LabelField("Mask", EditorStyles.miniBoldLabel);
+                    EditorGUI.indentLevel -= 1;
+                    editor.ShaderProperty(FindProperty("_StarshellMask"), "Map", 2);
+                    editor.ShaderProperty(FindProperty("_StarshellChannel"), "Channel", 2);
+                    EditorGUI.indentLevel += 2;
+
+                    GUILayout.EndVertical();
+                }
+                EditorGUI.indentLevel -= 1;
+
+            }
+            else
+            {
+                target.SetFloat(tog5, 0);
+            }
+
+            //Rainbow
+            if (target.GetFloat("_RainbowEnable") == 0)
+            {
+                ShowRainbow = EditorGUILayout.Foldout(ShowRainbow, title6, true, EditorStyles.foldoutHeader);
+            }
+            else
+            {
+                ShowRainbow = EditorGUILayout.Foldout(ShowRainbow, title6, true, colorFoldout);
+            }
+
+            if (ShowRainbow)
+            {
+                target.SetFloat(tog6, 1);
+                EditorGUI.indentLevel += 1;
+
+                MaterialProperty enable = FindProperty("_RainbowEnable");
+
+                EditorGUI.BeginChangeCheck();
+                editor.ShaderProperty(enable, "Enable");
+                //Disable Rainbow Outline if Rainbow is disabled
+                if (EditorGUI.EndChangeCheck())
+                {
+                    if (target.GetFloat("_RainbowEnable") == 0)
+                    {
+                        target.SetFloat("_RainbowOutline", 0);
+                        target.SetFloat("_RainbowStardust", 0);
+                    }
+                }
+
+                if (target.GetFloat("_RainbowEnable") == 1)
+                {
+                    //Turn on Outline when property is checked
+                    EditorGUI.BeginChangeCheck();
+                    editor.ShaderProperty(FindProperty("_RainbowOutline"), "Rainbow Outline");
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        if (target.GetFloat("_RainbowOutline") == 1)
+                        {
+                            target.SetFloat("_Outline1Enable", 1);
+                            target.EnableKeyword("_OUTLINE1_ON");
+                        }
+                    }
+
+                    //Turn on Outline when property is checked
+                    EditorGUI.BeginChangeCheck();
+                    editor.ShaderProperty(FindProperty("_RainbowStardust"), "Rainbow Stardust");
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        if (target.GetFloat("_RainbowStardust") == 1)
+                        {
+                            target.SetFloat("_StarshellEnable", 1);
+                            target.EnableKeyword("_STARSHELL_ON");
+                        }
+                    }
+
+                    editor.ShaderProperty(FindProperty("_RainbowUVMode"), "UV Mode");
+                    editor.ShaderProperty(FindProperty("_RainbowScale"), "Scale");
+                    editor.ShaderProperty(FindProperty("_RainbowHueRange"), "Hue Range");
+                    editor.ShaderProperty(FindProperty("_RainbowHue"), "Hue");
+                    editor.ShaderProperty(FindProperty("_RainbowSaturation"), "Saturation");
+                    editor.ShaderProperty(FindProperty("_RainbowValue"), "Value");
+                    editor.ShaderProperty(FindProperty("_RainbowEmission"), "Emission");
+                    editor.ShaderProperty(FindProperty("_RainbowRotation"), "Rotation");
+                    editor.ShaderProperty(FindProperty("_RainbowSpeed"), "Speed");
+
+                    if (target.GetFloat("_RainbowUVMode") > 0)
+                    {
+                        if(target.GetFloat("_RainbowUVMode") < 3)
+                        {
+                            editor.ShaderProperty(FindProperty("_RainbowRadialCenter"), "Radial Center");
+                            if(target.GetFloat("_RainbowUVMode") == 2)
+                            {
+                                editor.ShaderProperty(FindProperty("_RainbowSpiralCurve"), "Spiral Curve");
+                            }
+                        }
+                    }
+
+                    GUILayout.BeginVertical("box");
+
+                    EditorGUI.indentLevel -= 2;
+                    EditorGUI.indentLevel += 1;
+                    EditorGUILayout.LabelField("Mask", EditorStyles.miniBoldLabel);
+                    EditorGUI.indentLevel -= 1;
+                    editor.ShaderProperty(FindProperty("_RainbowMask"), "Map", 2);
+                    editor.ShaderProperty(FindProperty("_RainbowChannel"), "Channel", 2);
+                    EditorGUI.indentLevel += 2;
+
+                    GUILayout.EndVertical();
+                }
+                EditorGUI.indentLevel -= 1;
+            }
+            else
+            {
+                target.SetFloat(tog6, 0);
+            }
+
+            //Outline Properties
+            if (target.GetFloat("_Outline1Enable") == 0)
+            {
+                ShowOutline = EditorGUILayout.Foldout(ShowOutline, title4, true, EditorStyles.foldoutHeader);
+            }
+            else
+            {
+                ShowOutline = EditorGUILayout.Foldout(ShowOutline, title4, true, colorFoldout);
+            }
+
+            if (ShowOutline)
+            {
+                target.SetFloat(tog4, 1);
+                EditorGUI.indentLevel += 1;
+
+                MaterialProperty enable = FindProperty("_Outline1Enable");
+
+                EditorGUI.BeginChangeCheck();
+                editor.ShaderProperty(enable, "Enable");
+                //Disable Rainbow Outline if Outline is disabled
+                if (EditorGUI.EndChangeCheck())
+                {
+                    if (target.GetFloat("_Outline1Enable") == 0)
+                    {
+                        target.SetFloat("_RainbowOutline", 0);
+                    }
+                }
+
+                if (target.GetFloat("_Outline1Enable") == 1)
+                {
+                    //Turn on Rainbow when property is checked
+                    EditorGUI.BeginChangeCheck();
+                    editor.ShaderProperty(FindProperty("_RainbowOutline"), "Rainbow Outline");
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        if (target.GetFloat("_RainbowOutline") == 1)
+                        {
+                            target.SetFloat("_RainbowEnable", 1);
+                            target.EnableKeyword("_RAINBOW_ON");
+                        }
+                    }
+
+                    editor.ShaderProperty(FindProperty("_OutlineColor1"), "Outline Color");
+                    editor.ShaderProperty(FindProperty("_OutlineWidth1"), "Outline Width");
+                    editor.ShaderProperty(FindProperty("_MaxOutlineWidth1"), "Max Outline Width");
+                    editor.ShaderProperty(FindProperty("_StencilReference"), MakeLabel("Stencil Reference", "Set this to something unique"));
+
+                    GUILayout.BeginVertical("box");
+
+                    EditorGUI.indentLevel -= 2;
+                    EditorGUI.indentLevel += 1;
+                    EditorGUILayout.LabelField("Mask", EditorStyles.miniBoldLabel);
+                    EditorGUI.indentLevel -= 1;
+                    editor.ShaderProperty(FindProperty("_OutlineMask"), "Map", 2);
+                    editor.ShaderProperty(FindProperty("_OutlineChannel"), "Channel", 2);
+                    EditorGUI.indentLevel += 2;
+
+                    GUILayout.EndVertical();
+                }
+                EditorGUI.indentLevel -= 1;
+            }
+            else
+            {
+                target.SetFloat(tog4, 0);
+            }
+            EditorGUI.indentLevel -= 2;
+        }
+        else
+        {
+            target.SetFloat(tog, 0);
         }
     }
 
     //Create foldout that contains tile discard
-    private static bool showTileDiscard = false;
     void DoTileDiscard()
     {
-        showTileDiscard = GetFoldState("showTileDiscard");
-        //Create foldout
-        SetFoldState("showTileDiscard", EditorGUILayout.Foldout(showTileDiscard, "UV Tile Discard", true, EditorStyles.foldoutHeader));
-        if (showTileDiscard)
+        //Convert material int to bool
+        bool ShowMain;
+        string tog = "_ShowTileDiscard";
+        string title = "UV Tile Discard";
+
+        if (target.GetFloat(tog) == 1)
         {
+            ShowMain = true;
+        }
+        else
+        {
+            ShowMain = false;
+        }
+
+        //Create foldout
+        ShowMain = EditorGUILayout.Foldout(ShowMain, title, true, EditorStyles.foldoutHeader);
+        if (ShowMain)
+        {
+            target.SetFloat(tog, 1);
+
             EditorGUI.indentLevel += 2;
 
             Rect position = EditorGUILayout.GetControlRect();
@@ -791,115 +859,252 @@ public class SomnaShaderUI : ShaderGUI
 
             EditorGUI.indentLevel -= 2;
         }
+        else
+        {
+            target.SetFloat(tog, 0);
+        }
     }
 
     //Create foldout that contains Emission properties
-    private static bool showEmission = false;
-    private static bool showEmission1 = false;
-    private static bool showEmission2 = false;
-    private static bool showEmission3 = false;
-    private static bool showEmission4 = false;
     void DoGlobalEmission()
     {
-        showEmission = GetFoldState("showEmission");
-        //Create foldout
-        SetFoldState("showEmission", EditorGUILayout.Foldout(showEmission, "Emissions", true, EditorStyles.foldoutHeader));
-        if (showEmission)
-        {
-            EditorGUI.indentLevel += 1;
+        //Convert material int to bool
+        bool ShowMain;
+        string tog = "_ShowEmission";
+        string title = "Emissions";
 
+        if (target.GetFloat(tog) == 1)
+        {
+            ShowMain = true;
+        }
+        else
+        {
+            ShowMain = false;
+        }
+
+        //Create foldout
+        ShowMain = EditorGUILayout.Foldout(ShowMain, title, true, EditorStyles.foldoutHeader);
+        if (ShowMain)
+        {
+            target.SetFloat(tog, 1);
+
+            EditorGUI.indentLevel += 1;
             DoEmissionMain();
-            DoEmissionGeneric(
-                "Emission 01",
-                "_UseFallback0",
-                "_RedChGlowFallback",
-                "_EnableRedChannel",
-                "_GlowMask0",
-                "_GlowMask0Channel",
-                DoRedChGlow,
-                DoRedChAL,
-                ref showEmission1
-            );
-            DoEmissionGeneric(
-                "Emission 02",
-                "_UseFallback1",
-                "_GreenChGlowFallback",
-                "_EnableGreenChannel",
-                "_GlowMask1",
-                "_GlowMask1Channel",
-                DoGreenChGlow,
-                DoGreenChAL,
-                ref showEmission2
-            );
-            DoEmissionGeneric(
-                "Emission 03",
-                "_UseFallback2",
-                "_BlueChGlowFallback",
-                "_EnableBlueChannel",
-                "_GlowMask2",
-                "_GlowMask2Channel",
-                DoBlueChGlow,
-                DoBlueChAL,
-                ref showEmission3
-            );
-            DoEmissionGeneric(
-                "Emission 04",
-                "_UseFallback3",
-                "_AlphaChGlowFallback",
-                "_EnableAlphaChannel",
-                "_GlowMask3",
-                "_GlowMask3Channel",
-                DoAlphaChGlow,
-                DoAlphaChAL,
-                ref showEmission4
-            );
+            DoEmission01();
+            DoEmission02();
+            DoEmission03();
+            DoEmission04();
 
             EditorGUI.indentLevel -= 1;
         }
-    }
-
-    void DoEmissionGeneric(
-        string title,
-        string fallbackProp,
-        string colorFallbackProp,
-        string enableChannelProp,
-        string glowmaskProp,
-        string glowmaskChannelProp,
-        Action channelGlow,
-        Action audioLink,
-        ref bool foldoutState
-    )
-    {
-        foldoutState = EditorGUILayout.Foldout(foldoutState, title, true, styleCheck(target.GetFloat(fallbackProp) == 1));
-        if (foldoutState)
+        else
         {
-            GUILayout.BeginVertical("box");
-            editor.ShaderProperty(FindProperty(fallbackProp), "Enable", 2);
-            editor.ShaderProperty(FindProperty(colorFallbackProp), "Color", 2);
-            GUILayout.EndVertical();
-
-            EditorGUILayout.LabelField("Luma Glow/AudioLink", EditorStyles.miniBoldLabel);
-            editor.ShaderProperty(FindProperty(enableChannelProp), "Enable", 2);
-
-            channelGlow?.Invoke();
-            audioLink?.Invoke();
-
-            GUILayout.BeginVertical("box");
-            EditorGUILayout.LabelField("Mask", EditorStyles.miniBoldLabel);
-            editor.ShaderProperty(FindProperty(glowmaskProp), "Map", 2);
-            editor.ShaderProperty(FindProperty(glowmaskChannelProp), "Channel", 2);
-            GUILayout.EndVertical();
+            target.SetFloat(tog, 0);
         }
     }
 
-    private static bool showMainEmission = false;
+    void DoEmission01()
+    {
+        //Convert material int to bool
+        bool ShowMain;
+        string tog = "_ShowEmission01";
+        string title = "Emission 01";
+
+        if (target.GetFloat(tog) == 1)
+        {
+            ShowMain = true;
+        }
+        else
+        {
+            ShowMain = false;
+        }
+
+        //Create foldout
+        ShowMain = EditorGUILayout.Foldout(ShowMain, title, true, EditorStyles.foldoutHeader);
+        if (ShowMain)
+        {
+            target.SetFloat(tog, 1);
+
+            GUILayout.BeginVertical("box");
+            editor.ShaderProperty(FindProperty("_UseFallback0"), "Enable", 2);
+            editor.ShaderProperty(FindProperty("_RedChGlowFallback"), "Color", 2);
+            GUILayout.EndVertical();
+
+            EditorGUILayout.LabelField("Luma Glow/AudioLink", EditorStyles.miniBoldLabel);
+            editor.ShaderProperty(FindProperty("_EnableRedChannel"), "Enable", 2);
+
+            DoRedChGlow();
+            DoRedChAL();
+
+            GUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField("Mask", EditorStyles.miniBoldLabel);
+            editor.ShaderProperty(FindProperty("_GlowMask0"), "Map", 2);
+            editor.ShaderProperty(FindProperty("_GlowMask0Channel"), "Channel", 2);
+            GUILayout.EndVertical();
+        }
+        else
+        {
+            target.SetFloat(tog, 0);
+        }
+    }
+
+    void DoEmission02()
+    {
+        //Convert material int to bool
+        bool ShowMain;
+        string tog = "_ShowEmission02";
+        string title = "Emission 02";
+
+        if (target.GetFloat(tog) == 1)
+        {
+            ShowMain = true;
+        }
+        else
+        {
+            ShowMain = false;
+        }
+
+        //Create foldout
+        ShowMain = EditorGUILayout.Foldout(ShowMain, title, true, EditorStyles.foldoutHeader);
+        if (ShowMain)
+        {
+            target.SetFloat(tog, 1);
+
+            GUILayout.BeginVertical("box");
+            editor.ShaderProperty(FindProperty("_UseFallback1"), "Enable", 2);
+            editor.ShaderProperty(FindProperty("_GreenChGlowFallback"), "Color", 2);
+            GUILayout.EndVertical();
+
+            EditorGUILayout.LabelField("Luma Glow/AudioLink", EditorStyles.miniBoldLabel);
+            editor.ShaderProperty(FindProperty("_EnableGreenChannel"), "Enable", 2);
+
+            DoGreenChGlow();
+            DoGreenChAL();
+
+            GUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField("Mask", EditorStyles.miniBoldLabel);
+            editor.ShaderProperty(FindProperty("_GlowMask1"), "Map", 2);
+            editor.ShaderProperty(FindProperty("_GlowMask1Channel"), "Channel", 2);
+            GUILayout.EndVertical();
+        }
+        else
+        {
+            target.SetFloat(tog, 0);
+        }
+    }
+
+    void DoEmission03()
+    {
+        //Convert material int to bool
+        bool ShowMain;
+        string tog = "_ShowEmission03";
+        string title = "Emission 03";
+
+        if (target.GetFloat(tog) == 1)
+        {
+            ShowMain = true;
+        }
+        else
+        {
+            ShowMain = false;
+        }
+
+        //Create foldout
+        ShowMain = EditorGUILayout.Foldout(ShowMain, title, true, EditorStyles.foldoutHeader);
+        if (ShowMain)
+        {
+            target.SetFloat(tog, 1);
+
+            GUILayout.BeginVertical("box");
+            editor.ShaderProperty(FindProperty("_UseFallback2"), "Enable", 2);
+            editor.ShaderProperty(FindProperty("_BlueChGlowFallback"), "Color", 2);
+            GUILayout.EndVertical();
+
+            EditorGUILayout.LabelField("Luma Glow/AudioLink", EditorStyles.miniBoldLabel);
+            editor.ShaderProperty(FindProperty("_EnableBlueChannel"), "Enable", 2);
+
+            DoBlueChGlow();
+            DoBlueChAL();
+
+            GUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField("Mask", EditorStyles.miniBoldLabel);
+            editor.ShaderProperty(FindProperty("_GlowMask2"), "Map", 2);
+            editor.ShaderProperty(FindProperty("_GlowMask2Channel"), "Channel", 2);
+            GUILayout.EndVertical();
+        }
+        else
+        {
+            target.SetFloat(tog, 0);
+        }
+    }
+
+    void DoEmission04()
+    {
+        //Convert material int to bool
+        bool ShowMain;
+        string tog = "_ShowEmission04";
+        string title = "Emission 04";
+
+        if (target.GetFloat(tog) == 1)
+        {
+            ShowMain = true;
+        }
+        else
+        {
+            ShowMain = false;
+        }
+
+        //Create foldout
+        ShowMain = EditorGUILayout.Foldout(ShowMain, title, true, EditorStyles.foldoutHeader);
+        if (ShowMain)
+        {
+            target.SetFloat(tog, 1);
+
+            GUILayout.BeginVertical("box");
+            editor.ShaderProperty(FindProperty("_UseFallback3"), "Enable", 2);
+            editor.ShaderProperty(FindProperty("_AlphaChGlowFallback"), "Color", 2);
+            GUILayout.EndVertical();
+
+            EditorGUILayout.LabelField("Luma Glow/AudioLink", EditorStyles.miniBoldLabel);
+            editor.ShaderProperty(FindProperty("_EnableAlphaChannel"), "Enable", 2);
+
+            DoAlphaChGlow();
+            DoAlphaChAL();
+
+            GUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField("Mask", EditorStyles.miniBoldLabel);
+            editor.ShaderProperty(FindProperty("_GlowMask3"), "Map", 2);
+            editor.ShaderProperty(FindProperty("_GlowMask3Channel"), "Channel", 2);
+            GUILayout.EndVertical();
+        }
+        else
+        {
+            target.SetFloat(tog, 0);
+        }
+    }
+
     void DoEmissionMain()
     {
         //Convert material int to bool
-        EditorGUI.BeginChangeCheck();
-        showMainEmission = EditorGUILayout.Foldout(showMainEmission, "Main Emission", true, styleCheck(target.GetFloat("_EnableEmission") == 1));
-        if (showMainEmission)
+        bool ShowMain;
+        string tog = "_ShowEmissionMain";
+        string title = "Main Emission";
+
+        if (target.GetFloat(tog) == 1)
         {
+            ShowMain = true;
+        }
+        else
+        {
+            ShowMain = false;
+        }
+
+        //Create foldout
+        ShowMain = EditorGUILayout.Foldout(ShowMain, title, true, EditorStyles.foldoutHeader);
+        if (ShowMain)
+        {
+            target.SetFloat(tog, 1);
+
             GUILayout.BeginVertical("box");
             DoEmission();
             editor.ShaderProperty(FindProperty("_ReplaceBaseColor"), "Replace Base Color", 2);
@@ -914,21 +1119,42 @@ public class SomnaShaderUI : ShaderGUI
             editor.ShaderProperty(FindProperty("_EmissionMaskMap"), "Map", 2);
             editor.ShaderProperty(FindProperty("_EmissionMaskChannel"), "Channel", 2);
             GUILayout.EndVertical();
-            EditorGUI.EndChangeCheck();
 
+        }
+        else
+        {
+            target.SetFloat(tog, 0);
         }
     }
 
     //Create foldout that contains mask maps
-    private static bool showMaskMaps = false;
     void DoTextureMaps()
     {
-        showMaskMaps = GetFoldState("showMaskMaps");
-        //Create foldout
-        SetFoldState("showMaskMaps", EditorGUILayout.Foldout(showMaskMaps, "Masks/Maps", true, EditorStyles.foldoutHeader));
-        if (showMaskMaps)
+        //Convert material int to bool
+        bool ShowMain;
+        string tog = "_ShowMaps";
+        string title = "Masks/Maps";
+        //string workflow = "_Workflow";
+
+
+
+        if (target.GetFloat(tog) == 1)
         {
+            ShowMain = true;
+        }
+        else
+        {
+            ShowMain = false;
+        }
+
+        //Create foldout
+        ShowMain = EditorGUILayout.Foldout(ShowMain, title, true, EditorStyles.foldoutHeader);
+        if (ShowMain)
+        {
+            target.SetFloat(tog, 1);
+
             GUILayout.Space(10);
+            //editor.ShaderProperty(FindProperty(workflow), "Workflow", 2);
 
             GUILayout.BeginVertical("box");
             DoMaskMap1();
@@ -937,10 +1163,10 @@ public class SomnaShaderUI : ShaderGUI
             DoMaskMap2();
 
             GUILayout.BeginVertical("box");
-            DoMaskMapGeneric("_MaskMap03", "_MaskMap03UV", "_AnimatedOffsetMaskMap03", "Mask Map 03", "Texture, used for various masks and maps");
+            DoMaskMap3();
             GUILayout.EndVertical();
 
-            DoMaskMapGeneric("_MaskMap04", "_MaskMap04UV", "_AnimatedOffsetMaskMap04", "Mask Map 04", "Texture, used for various masks and maps");
+            DoMaskMap4();
 
             GUILayout.BeginVertical("box");
             editor.TexturePropertySingleLine(MakeLabel("Directional Map", "Used to make animated effects follow a specific direction"), FindProperty("_DirectionalMap"));
@@ -952,17 +1178,37 @@ public class SomnaShaderUI : ShaderGUI
             MaterialProperty offsetProp = FindProperty("_AnimatedOffsetDirectionalMap");
             AnimatedOffsetProp(offsetProp);
         }
+        else
+        {
+            target.SetFloat(tog, 0);
+        }
     }
 
     //Create foldout that contains lighting properties
-    private static bool showLighting = false;
     void DoLightingProperties()
     {
-        //Create foldout
-        showLighting = GetFoldState("showLighting");
-        SetFoldState("showLighting", EditorGUILayout.Foldout(showLighting, "Lighting", true, EditorStyles.foldoutHeader));
-        if (showLighting)
+        //Convert material int to bool
+        bool ShowMain;
+        string tog = "_ShowLighting";
+        string title = "Lighting";
+
+
+
+        if (target.GetFloat(tog) == 1)
         {
+            ShowMain = true;
+        }
+        else
+        {
+            ShowMain = false;
+        }
+
+        //Create foldout
+        ShowMain = EditorGUILayout.Foldout(ShowMain, title, true, EditorStyles.foldoutHeader);
+        if (ShowMain)
+        {
+            target.SetFloat(tog, 1);
+
             //Metallics
             GUILayout.Space(10);
             GUILayout.BeginVertical("box");
@@ -1050,19 +1296,38 @@ public class SomnaShaderUI : ShaderGUI
             //Specular Glint
             //EditorGUILayout.LabelField("Specular Glint", EditorStyles.boldLabel);
             //editor.ShaderProperty(FindProperty("_SpecularGlint"), "Enable Glint", 2);
+
+
+
+
+
+        }
+        else
+        {
+            target.SetFloat(tog, 0);
         }
     }
 
     //Create Foldout that contains Luma Glow properties
-    private static bool showLumaProps = false;
     void DoLumaProperties()
     {
+        bool showProperties;
         MaterialProperty glowMask = FindProperty("_GlowMask");
+        if (target.GetFloat("_ShowGlow") == 1)
+        {
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
 
         //Create foldout
-        showLumaProps = EditorGUILayout.Foldout(showLumaProps, "Luma Glow/AudioLink", true, EditorStyles.foldoutHeader);
-        if (showLumaProps)
+        showProperties = EditorGUILayout.Foldout(showProperties, "Luma Glow/AudioLink", true, EditorStyles.foldoutHeader);
+        if (showProperties)
         {
+            target.SetFloat("_ShowGlow", 1);
+
             DoGlowMask();
 
             if (target.GetFloat("_EnableEmission") == 1)
@@ -1071,7 +1336,7 @@ public class SomnaShaderUI : ShaderGUI
                 DoEmissionAL();
             }
 
-            if (enableOutline)
+            if (enableOutline is true)
             {
                 DoOutlineGlow();
                 DoOutlineAL();
@@ -1129,28 +1394,45 @@ public class SomnaShaderUI : ShaderGUI
             }
 
         }
+        else
+        {
+            target.SetFloat("_ShowGlow", 0);
+        }
     }
 
     //Create Foldout that contains Effect properties
-    private static bool showEffects2 = false;
     void DoEffects()
     {
         MaterialProperty mask = FindProperty("_EffectMask");
-
-        showEffects2 = EditorGUILayout.Foldout(showEffects2, "Special Effects", true, EditorStyles.foldoutHeader);
-        if (showEffects2)
+        bool showProperties;
+        if (target.GetFloat("_ShowEffects") == 1)
         {
-            //target.SetFloat("_ShowEffects", 1);
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
+
+        //Create foldout
+        showProperties = EditorGUILayout.Foldout(showProperties, "Special Effects", true, EditorStyles.foldoutHeader);
+        if (showProperties)
+        {
+            target.SetFloat("_ShowEffects", 1);
             DoEffectMask();
             DoSparkles();
             DoRainbow();
             DoIridescence();
 
-            if (enableOutline)
+            if (enableOutline is true)
             {
                 DoOutlines2();
             }
 
+        }
+        else
+        {
+            target.SetFloat("_ShowEffects", 0);
         }
     }
 
@@ -1171,7 +1453,6 @@ public class SomnaShaderUI : ShaderGUI
     void AnimatedOffsetProp(MaterialProperty offsetProp)
     {
         EditorGUI.indentLevel += 2;
-        EditorGUI.BeginChangeCheck();
         Vector2 offset = new Vector2(offsetProp.vectorValue.x, offsetProp.vectorValue.y);
 
         EditorGUILayout.BeginHorizontal();
@@ -1187,7 +1468,7 @@ public class SomnaShaderUI : ShaderGUI
         EditorGUILayout.LabelField("", GUILayout.Width(EditorGUIUtility.labelWidth - 18));
 
         Rect xFieldRect = EditorGUILayout.GetControlRect(false,20f);
-        offset.x = EditorGUI.FloatField(xFieldRect, offset.y);
+        offset.x = EditorGUI.FloatField(xFieldRect, offset.x);
 
         Rect yFieldRect = EditorGUILayout.GetControlRect(false, 20f);
         offset.y = EditorGUI.FloatField(yFieldRect, offset.y);
@@ -1267,12 +1548,25 @@ public class SomnaShaderUI : ShaderGUI
         AnimatedOffsetProp(offsetProp);
     }
 
-    void DoMaskMapGeneric(string mainTexProp, string maskMapUV, string animatedOffsetProp, string textureLabel, string textureDescription)
+    void DoMaskMap3()
     {
-        MaterialProperty mainTex = FindProperty(mainTexProp);
-        MaterialProperty uvChannel = FindProperty(maskMapUV);
-        MaterialProperty offsetProp = FindProperty(animatedOffsetProp);
-        editor.TexturePropertySingleLine(MakeLabel(textureLabel, textureDescription), mainTex);
+        MaterialProperty mainTex = FindProperty("_MaskMap03");
+        MaterialProperty uvChannel = FindProperty("_MaskMap03UV");
+        MaterialProperty offsetProp = FindProperty("_AnimatedOffsetMaskMap03");
+        editor.TexturePropertySingleLine(MakeLabel("Mask Map 03", "Texture, used for various masks and maps"), mainTex);
+        editor.ShaderProperty(uvChannel, "UV Channel", 2);
+        EditorGUI.indentLevel += 2;
+        editor.TextureScaleOffsetProperty(mainTex);
+        EditorGUI.indentLevel -= 2;
+        AnimatedOffsetProp(offsetProp);
+    }
+
+    void DoMaskMap4()
+    {
+        MaterialProperty mainTex = FindProperty("_MaskMap04");
+        MaterialProperty uvChannel = FindProperty("_MaskMap04UV");
+        MaterialProperty offsetProp = FindProperty("_AnimatedOffsetMaskMap04");
+        editor.TexturePropertySingleLine(MakeLabel("Mask Map 04", "Texture, used for various masks and maps"), mainTex);
         editor.ShaderProperty(uvChannel, "UV Channel", 2);
         EditorGUI.indentLevel += 2;
         editor.TextureScaleOffsetProperty(mainTex);
@@ -1354,44 +1648,51 @@ public class SomnaShaderUI : ShaderGUI
     }
 
     //Emission
-    void DoEmission()
+void DoEmission()
+{
+    MaterialProperty tog = FindProperty("_EnableEmission");
+
+    EditorGUI.indentLevel += 2;
+    editor.ShaderProperty(tog, MakeLabel("Enable Emission", "Texture/color, adds glow"));
+    EditorGUI.indentLevel -= 2;
+
+    if (tog.floatValue == 1)
     {
-        MaterialProperty tog = FindProperty("_EnableEmission");
-
+        MaterialProperty tex = FindProperty("_EmissionMap");
+        MaterialProperty color = FindProperty("_EmissionColor");
+        MaterialProperty offsetProp = FindProperty("_AnimatedOffsetEmssion");
+        editor.TexturePropertySingleLine(MakeLabel("Emission"), tex, color);
         EditorGUI.indentLevel += 2;
-        editor.ShaderProperty(tog, MakeLabel("Enable Emission", "Texture/color, adds glow"));
+        editor.TextureScaleOffsetProperty(tex);
         EditorGUI.indentLevel -= 2;
-
-        if (tog.floatValue == 1)
-        {
-            EditorGUI.BeginChangeCheck();
-            MaterialProperty tex = FindProperty("_EmissionMap");
-            MaterialProperty color = FindProperty("_EmissionColor");
-            MaterialProperty offsetProp = FindProperty("_AnimatedOffsetEmssion");
-            editor.TexturePropertySingleLine(MakeLabel("Emission"), tex, color);
-            EditorGUI.indentLevel += 2;
-            editor.TextureScaleOffsetProperty(tex);
-            EditorGUI.indentLevel -= 2;
-            AnimatedOffsetProp(offsetProp);
-            EditorGUI.EndChangeCheck();
-        }
+        AnimatedOffsetProp(offsetProp);
     }
+}
 
     //Outlines
-    private static bool showDoOutline = false;
     void DoOutlines()
     {
-        EditorGUI.indentLevel += 2;
-        showDoOutline = EditorGUILayout.Foldout(showDoOutline, "Outline Settings", true, EditorStyles.foldoutHeader);
-
-        if (showDoOutline)
+        bool showProperties;
+        if (target.GetFloat("_ShowOutline") == 1)
         {
-            MaterialProperty maskCH = FindProperty("_OutlineMaskingChannel");
-            MaterialProperty color = FindProperty("_OutlineColor");
-            MaterialProperty width = FindProperty("_OutlineWidth");
-            MaterialProperty maxWidth = FindProperty("_MaxOutlineWidth");
-            MaterialProperty fudge = FindProperty("_ViewFudge");
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
 
+        EditorGUI.indentLevel += 2;
+        showProperties = EditorGUILayout.Foldout(showProperties, "Outline Settings", true, EditorStyles.foldoutHeader);
+
+        MaterialProperty maskCH = FindProperty("_OutlineMaskingChannel");
+        MaterialProperty color = FindProperty("_OutlineColor");
+        MaterialProperty width = FindProperty("_OutlineWidth");
+        MaterialProperty maxWidth = FindProperty("_MaxOutlineWidth");
+        MaterialProperty fudge = FindProperty("_ViewFudge");
+
+        if (showProperties)
+        {
             EditorGUI.indentLevel += 1;
             target.SetFloat("_ShowOutline", 1);
 
@@ -1402,24 +1703,37 @@ public class SomnaShaderUI : ShaderGUI
             editor.ShaderProperty(fudge, MakeLabel("Push Outline", "Helps fix ugly internal outlines"));
             EditorGUI.indentLevel -= 1;
         }
+        else
+        {
+            target.SetFloat("_ShowOutline", 0);
+        }
         EditorGUI.indentLevel -= 2;
     }
 
     //Outlines
-    private static bool showOutlines = false;
     void DoOutlines2()
     {
-        EditorGUI.indentLevel += 2;
-        showOutlines = EditorGUILayout.Foldout(showOutlines, "Outline Settings", true, EditorStyles.foldoutHeader);
-
-        if (showOutlines)
+        bool showProperties;
+        if (target.GetFloat("_ShowOutline2") == 1)
         {
-            MaterialProperty maskCH = FindProperty("_OutlineMaskingChannel");
-            MaterialProperty color = FindProperty("_OutlineColor");
-            MaterialProperty width = FindProperty("_OutlineWidth");
-            MaterialProperty maxWidth = FindProperty("_MaxOutlineWidth");
-            MaterialProperty fudge = FindProperty("_ViewFudge");
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
 
+        EditorGUI.indentLevel += 2;
+        showProperties = EditorGUILayout.Foldout(showProperties, "Outline Settings", true, EditorStyles.foldoutHeader);
+
+        MaterialProperty maskCH = FindProperty("_OutlineMaskingChannel");
+        MaterialProperty color = FindProperty("_OutlineColor");
+        MaterialProperty width = FindProperty("_OutlineWidth");
+        MaterialProperty maxWidth = FindProperty("_MaxOutlineWidth");
+        MaterialProperty fudge = FindProperty("_ViewFudge");
+
+        if (showProperties)
+        {
             EditorGUI.indentLevel += 1;
             target.SetFloat("_ShowOutline2", 1);
 
@@ -1429,6 +1743,10 @@ public class SomnaShaderUI : ShaderGUI
             editor.ShaderProperty(maxWidth, MakeLabel("Max Width", "Maximum distance scaling width"));
             editor.ShaderProperty(fudge, MakeLabel("Push Outline", "Helps fix ugly internal outlines"));
             EditorGUI.indentLevel -= 1;
+        }
+        else
+        {
+            target.SetFloat("_ShowOutline2", 0);
         }
         EditorGUI.indentLevel -= 2;
     }
@@ -1477,26 +1795,38 @@ public class SomnaShaderUI : ShaderGUI
     }
 
     //Emission Glow Settings
-    private static bool showEmissionGlow = false;
     void DoEmissionGlow()
     {
+        bool showProperties;
+        if (target.GetFloat("_ShowEmissGlow") == 1)
+        {
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
+
+        MaterialProperty Mode = FindProperty("_EmissionGlowMode");
+        MaterialProperty BlendMode = FindProperty("_EmissionGlowBlendMode");
+        MaterialProperty Tint = FindProperty("_EmissionGlowTint");
+        MaterialProperty MinBrightness = FindProperty("_EmissionGlowMinBrightness");
+        MaterialProperty PulseDir = FindProperty("_EmissionGlowPulseDir");
+        MaterialProperty PulseScale = FindProperty("_EmissionGlowPulseScale");
+        MaterialProperty PulseOffset = FindProperty("_EmissionGlowPulseOffset");
+        MaterialProperty PulseCenter = FindProperty("_EmissionGlowRadialCenter");
+        MaterialProperty AnimBand = FindProperty("_EmissionGlowAnimationBand");
+        MaterialProperty AnimMode = FindProperty("_EmissionGlowAnimationMode");
+        MaterialProperty AnimSpeed = FindProperty("_EmissionGlowAnimationSpeed");
+        MaterialProperty AnimStr = FindProperty("_EmissionGlowAnimationStrength");
+
         //Create Foldout
         EditorGUI.indentLevel += 2;
-        showEmissionGlow = EditorGUILayout.Foldout(showEmissionGlow, "Luma Glow", true, EditorStyles.foldoutHeader);
-        if (showEmissionGlow)
+        showProperties = EditorGUILayout.Foldout(showProperties, "Luma Glow", true, EditorStyles.foldoutHeader);
+        if (showProperties)
         {
-            MaterialProperty Mode = FindProperty("_EmissionGlowMode");
-            MaterialProperty BlendMode = FindProperty("_EmissionGlowBlendMode");
-            MaterialProperty Tint = FindProperty("_EmissionGlowTint");
-            MaterialProperty MinBrightness = FindProperty("_EmissionGlowMinBrightness");
-            MaterialProperty PulseDir = FindProperty("_EmissionGlowPulseDir");
-            MaterialProperty PulseScale = FindProperty("_EmissionGlowPulseScale");
-            MaterialProperty PulseOffset = FindProperty("_EmissionGlowPulseOffset");
-            MaterialProperty PulseCenter = FindProperty("_EmissionGlowRadialCenter");
-            MaterialProperty AnimBand = FindProperty("_EmissionGlowAnimationBand");
-            MaterialProperty AnimMode = FindProperty("_EmissionGlowAnimationMode");
-            MaterialProperty AnimSpeed = FindProperty("_EmissionGlowAnimationSpeed");
-            MaterialProperty AnimStr = FindProperty("_EmissionGlowAnimationStrength");
+            target.SetFloat("_ShowEmissGlow", 1);
+
             EditorGUI.indentLevel += 1;
             DoEmissionZone();
 
@@ -1533,27 +1863,42 @@ public class SomnaShaderUI : ShaderGUI
             }
             EditorGUI.indentLevel -= 1;
         }
+        else
+        {
+            target.SetFloat("_ShowEmissGlow", 0);
+        }
         EditorGUI.indentLevel -= 2;
     }
 
     //Emission AL Settings
-    private static bool showEmissionAL = false;
     void DoEmissionAL()
     {
+        bool showProperties;
+        if (target.GetFloat("_ShowEmissAL") == 1)
+        {
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
+
+        MaterialProperty Mode = FindProperty("_EmissionReactiveMode");
+        MaterialProperty BlendMode = FindProperty("_EmissionReactiveBlendMode");
+        MaterialProperty Tint = FindProperty("_EmissionReactiveTint");
+        MaterialProperty MinBrightness = FindProperty("_EmissionReactiveMinBrightness");
+        MaterialProperty PulseDir = FindProperty("_EmissionReactivePulseDir");
+        MaterialProperty PulseScale = FindProperty("_EmissionReactivePulseScale");
+        MaterialProperty PulseOffset = FindProperty("_EmissionReactivePulseOffset");
+        MaterialProperty PulseCenter = FindProperty("_EmissionReactiveRadialCenter");
+        MaterialProperty Band = FindProperty("_EmissionReactiveBand");
+
         //Create Foldout
         EditorGUI.indentLevel += 2;
-        showEmissionAL = EditorGUILayout.Foldout(showEmissionAL, "AudioLink", true, EditorStyles.foldoutHeader);
-        if (showEmissionAL)
+        showProperties = EditorGUILayout.Foldout(showProperties, "AudioLink", true, EditorStyles.foldoutHeader);
+        if (showProperties)
         {
-            MaterialProperty Mode = FindProperty("_EmissionReactiveMode");
-            MaterialProperty BlendMode = FindProperty("_EmissionReactiveBlendMode");
-            MaterialProperty Tint = FindProperty("_EmissionReactiveTint");
-            MaterialProperty MinBrightness = FindProperty("_EmissionReactiveMinBrightness");
-            MaterialProperty PulseDir = FindProperty("_EmissionReactivePulseDir");
-            MaterialProperty PulseScale = FindProperty("_EmissionReactivePulseScale");
-            MaterialProperty PulseOffset = FindProperty("_EmissionReactivePulseOffset");
-            MaterialProperty PulseCenter = FindProperty("_EmissionReactiveRadialCenter");
-            MaterialProperty Band = FindProperty("_EmissionReactiveBand");
+            target.SetFloat("_ShowEmissAL", 1);
 
             EditorGUI.indentLevel += 1;
             editor.ShaderProperty(Band, MakeLabel("AudioLink Band"));
@@ -1582,6 +1927,10 @@ public class SomnaShaderUI : ShaderGUI
             }
             EditorGUI.indentLevel -= 1;
         }
+        else
+        {
+            target.SetFloat("_ShowEmissAL", 0);
+        }
         EditorGUI.indentLevel -= 2;
     }
 
@@ -1600,22 +1949,33 @@ public class SomnaShaderUI : ShaderGUI
     }
 
     //Outline Glow Settings
-    private static bool showOutlineGlow = false;
     void DoOutlineGlow()
     {
+        bool showProperties;
+        if (target.GetFloat("_ShowOutlineGlow") == 1)
+        {
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
+
+        MaterialProperty Mode = FindProperty("_OutlineGlowMode");
+        MaterialProperty BlendMode = FindProperty("_OutlineGlowBlendMode");
+        MaterialProperty Tint = FindProperty("_OutlineGlowTint");
+        MaterialProperty MinBrightness = FindProperty("_OutlineGlowMinBrightness");
+        MaterialProperty PulseDir = FindProperty("_OutlineGlowPulseDir");
+        MaterialProperty PulseScale = FindProperty("_OutlineGlowPulseScale");
+        MaterialProperty PulseOffset = FindProperty("_OutlineGlowPulseOffset");
+        MaterialProperty PulseCenter = FindProperty("_OutlineGlowRadialCenter");
+
         //Create Foldout
         EditorGUI.indentLevel += 2;
-        showOutlineGlow = EditorGUILayout.Foldout(showOutlineGlow, "Outline Glow", true, EditorStyles.foldoutHeader);
-        if (showOutlineGlow)
+        showProperties = EditorGUILayout.Foldout(showProperties, "Outline Glow", true, EditorStyles.foldoutHeader);
+        if (showProperties)
         {
-            MaterialProperty Mode = FindProperty("_OutlineGlowMode");
-            MaterialProperty BlendMode = FindProperty("_OutlineGlowBlendMode");
-            MaterialProperty Tint = FindProperty("_OutlineGlowTint");
-            MaterialProperty MinBrightness = FindProperty("_OutlineGlowMinBrightness");
-            MaterialProperty PulseDir = FindProperty("_OutlineGlowPulseDir");
-            MaterialProperty PulseScale = FindProperty("_OutlineGlowPulseScale");
-            MaterialProperty PulseOffset = FindProperty("_OutlineGlowPulseOffset");
-            MaterialProperty PulseCenter = FindProperty("_OutlineGlowRadialCenter");
+            target.SetFloat("_ShowOutlineGlow", 1);
 
             EditorGUI.indentLevel += 1;
             DoOutlineZone();
@@ -1644,26 +2004,41 @@ public class SomnaShaderUI : ShaderGUI
             }
             EditorGUI.indentLevel -= 1;
         }
+        else
+        {
+            target.SetFloat("_ShowOutlineGlow", 0);
+        }
         EditorGUI.indentLevel -= 2;
     }
 
     //Outline AL Settings
-    private static bool showOutlineAL = false;
     void DoOutlineAL()
     {
-        EditorGUI.indentLevel += 2;
-        showOutlineAL = EditorGUILayout.Foldout(showOutlineAL, "Outline AudioLink", true, EditorStyles.foldoutHeader);
-        if (showOutlineAL)
+        bool showProperties;
+        if (target.GetFloat("_ShowOutlineAL") == 1)
         {
-            MaterialProperty Mode = FindProperty("_OutlineReactiveMode");
-            MaterialProperty BlendMode = FindProperty("_OutlineReactiveBlendMode");
-            MaterialProperty Tint = FindProperty("_OutlineReactiveTint");
-            MaterialProperty MinBrightness = FindProperty("_OutlineReactiveMinBrightness");
-            MaterialProperty PulseDir = FindProperty("_OutlineReactivePulseDir");
-            MaterialProperty PulseScale = FindProperty("_OutlineReactivePulseScale");
-            MaterialProperty PulseOffset = FindProperty("_OutlineReactivePulseOffset");
-            MaterialProperty PulseCenter = FindProperty("_OutlineReactiveRadialCenter");
-            MaterialProperty Band = FindProperty("_OutlineReactiveBand");
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
+
+        MaterialProperty Mode = FindProperty("_OutlineReactiveMode");
+        MaterialProperty BlendMode = FindProperty("_OutlineReactiveBlendMode");
+        MaterialProperty Tint = FindProperty("_OutlineReactiveTint");
+        MaterialProperty MinBrightness = FindProperty("_OutlineReactiveMinBrightness");
+        MaterialProperty PulseDir = FindProperty("_OutlineReactivePulseDir");
+        MaterialProperty PulseScale = FindProperty("_OutlineReactivePulseScale");
+        MaterialProperty PulseOffset = FindProperty("_OutlineReactivePulseOffset");
+        MaterialProperty PulseCenter = FindProperty("_OutlineReactiveRadialCenter");
+        MaterialProperty Band = FindProperty("_OutlineReactiveBand");
+
+        //Create Foldout
+        EditorGUI.indentLevel += 2;
+        showProperties = EditorGUILayout.Foldout(showProperties, "Outline AudioLink", true, EditorStyles.foldoutHeader);
+        if (showProperties)
+        {
             target.SetFloat("_ShowOutlineAL", 1);
 
             EditorGUI.indentLevel += 1;
@@ -1693,6 +2068,10 @@ public class SomnaShaderUI : ShaderGUI
             }
             EditorGUI.indentLevel -= 1;
         }
+        else
+        {
+            target.SetFloat("_ShowOutlineAL", 0);
+        }
         EditorGUI.indentLevel -= 2;
     }
 
@@ -1711,25 +2090,35 @@ public class SomnaShaderUI : ShaderGUI
     }
 
     //RedCh Glow Settings
-    private static bool showRedChGlow = false;
     void DoRedChGlow()
     {
+        bool showProperties;
+        if (target.GetFloat("_ShowRedGlow") == 1)
+        {
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
+
+        MaterialProperty Mode = FindProperty("_RedChGlowMode");
+        MaterialProperty Tint = FindProperty("_RedChGlowTint");
+        MaterialProperty MinBrightness = FindProperty("_RedChGlowMinBrightness");
+        MaterialProperty PulseDir = FindProperty("_RedChGlowPulseDir");
+        MaterialProperty PulseScale = FindProperty("_RedChGlowPulseScale");
+        MaterialProperty PulseOffset = FindProperty("_RedChGlowPulseOffset");
+        MaterialProperty PulseCenter = FindProperty("_RedChGlowRadialCenter");
+        MaterialProperty AnimBand = FindProperty("_RedChGlowAnimationBand");
+        MaterialProperty AnimMode = FindProperty("_RedChGlowAnimationMode");
+        MaterialProperty AnimSpeed = FindProperty("_RedChGlowAnimationSpeed");
+        MaterialProperty AnimStr = FindProperty("_RedChGlowAnimationStrength");
+
         //Create Foldout
         EditorGUI.indentLevel += 2;
-        showRedChGlow = EditorGUILayout.Foldout(showRedChGlow, "Luma Glow", true, EditorStyles.foldoutHeader);
-        if (showRedChGlow)
+        showProperties = EditorGUILayout.Foldout(showProperties, "Luma Glow", true, EditorStyles.foldoutHeader);
+        if (showProperties)
         {
-            MaterialProperty Mode = FindProperty("_RedChGlowMode");
-            MaterialProperty Tint = FindProperty("_RedChGlowTint");
-            MaterialProperty MinBrightness = FindProperty("_RedChGlowMinBrightness");
-            MaterialProperty PulseDir = FindProperty("_RedChGlowPulseDir");
-            MaterialProperty PulseScale = FindProperty("_RedChGlowPulseScale");
-            MaterialProperty PulseOffset = FindProperty("_RedChGlowPulseOffset");
-            MaterialProperty PulseCenter = FindProperty("_RedChGlowRadialCenter");
-            MaterialProperty AnimBand = FindProperty("_RedChGlowAnimationBand");
-            MaterialProperty AnimMode = FindProperty("_RedChGlowAnimationMode");
-            MaterialProperty AnimSpeed = FindProperty("_RedChGlowAnimationSpeed");
-            MaterialProperty AnimStr = FindProperty("_RedChGlowAnimationStrength");
             target.SetFloat("_ShowRedGlow", 1);
 
             EditorGUI.indentLevel += 1;
@@ -1768,27 +2157,42 @@ public class SomnaShaderUI : ShaderGUI
             }
             EditorGUI.indentLevel -= 1;
         }
+        else
+        {
+            target.SetFloat("_ShowRedGlow", 0);
+        }
         EditorGUI.indentLevel -= 2;
     }
 
     //RedCh AL Settings
-    private static bool showRedChAL = false;
     void DoRedChAL()
     {
+        bool showProperties;
+        if (target.GetFloat("_ShowRedAL") == 1)
+        {
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
+
+        MaterialProperty Mode = FindProperty("_RedChReactiveMode");
+        MaterialProperty BlendMode = FindProperty("_RedChReactiveBlendMode");
+        MaterialProperty Tint = FindProperty("_RedChReactiveTint");
+        MaterialProperty MinBrightness = FindProperty("_RedChReactiveMinBrightness");
+        MaterialProperty PulseDir = FindProperty("_RedChReactivePulseDir");
+        MaterialProperty PulseScale = FindProperty("_RedChReactivePulseScale");
+        MaterialProperty PulseOffset = FindProperty("_RedChReactivePulseOffset");
+        MaterialProperty PulseCenter = FindProperty("_RedChReactiveRadialCenter");
+        MaterialProperty Band = FindProperty("_RedChReactiveBand");
+
         //Create Foldout
         EditorGUI.indentLevel += 2;
-        showRedChAL = EditorGUILayout.Foldout(showRedChAL, "AudioLink", true, EditorStyles.foldoutHeader);
-        if (showRedChAL)
+        showProperties = EditorGUILayout.Foldout(showProperties, "AudioLink", true, EditorStyles.foldoutHeader);
+        if (showProperties)
         {
-            MaterialProperty Mode = FindProperty("_RedChReactiveMode");
-            MaterialProperty BlendMode = FindProperty("_RedChReactiveBlendMode");
-            MaterialProperty Tint = FindProperty("_RedChReactiveTint");
-            MaterialProperty MinBrightness = FindProperty("_RedChReactiveMinBrightness");
-            MaterialProperty PulseDir = FindProperty("_RedChReactivePulseDir");
-            MaterialProperty PulseScale = FindProperty("_RedChReactivePulseScale");
-            MaterialProperty PulseOffset = FindProperty("_RedChReactivePulseOffset");
-            MaterialProperty PulseCenter = FindProperty("_RedChReactiveRadialCenter");
-            MaterialProperty Band = FindProperty("_RedChReactiveBand");
+            target.SetFloat("_ShowRedAL", 1);
 
             EditorGUI.indentLevel += 1;
             editor.ShaderProperty(Band, MakeLabel("AudioLink Band"));
@@ -1817,6 +2221,10 @@ public class SomnaShaderUI : ShaderGUI
             }
             EditorGUI.indentLevel -= 1;
         }
+        else
+        {
+            target.SetFloat("_ShowRedAL", 0);
+        }
         EditorGUI.indentLevel -= 2;
     }
 
@@ -1835,25 +2243,36 @@ public class SomnaShaderUI : ShaderGUI
     }
 
     //GreenCh Glow Settings
-    private static bool showGreenChGlow = false;
     void DoGreenChGlow()
     {
+        bool showProperties;
+        if (target.GetFloat("_ShowGreenGlow") == 1)
+        {
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
+
+        MaterialProperty Mode = FindProperty("_GreenChGlowMode");
+        MaterialProperty Tint = FindProperty("_GreenChGlowTint");
+        MaterialProperty MinBrightness = FindProperty("_GreenChGlowMinBrightness");
+        MaterialProperty PulseDir = FindProperty("_GreenChGlowPulseDir");
+        MaterialProperty PulseScale = FindProperty("_GreenChGlowPulseScale");
+        MaterialProperty PulseOffset = FindProperty("_GreenChGlowPulseOffset");
+        MaterialProperty PulseCenter = FindProperty("_GreenChGlowRadialCenter");
+        MaterialProperty AnimBand = FindProperty("_GreenChGlowAnimationBand");
+        MaterialProperty AnimMode = FindProperty("_GreenChGlowAnimationMode");
+        MaterialProperty AnimSpeed = FindProperty("_GreenChGlowAnimationSpeed");
+        MaterialProperty AnimStr = FindProperty("_GreenChGlowAnimationStrength");
+
         //Create Foldout
         EditorGUI.indentLevel += 2;
-        showGreenChGlow = EditorGUILayout.Foldout(showGreenChGlow, "Luma Glow", true, EditorStyles.foldoutHeader);
-        if (showGreenChGlow)
+        showProperties = EditorGUILayout.Foldout(showProperties, "Luma Glow", true, EditorStyles.foldoutHeader);
+        if (showProperties)
         {
-            MaterialProperty Mode = FindProperty("_GreenChGlowMode");
-            MaterialProperty Tint = FindProperty("_GreenChGlowTint");
-            MaterialProperty MinBrightness = FindProperty("_GreenChGlowMinBrightness");
-            MaterialProperty PulseDir = FindProperty("_GreenChGlowPulseDir");
-            MaterialProperty PulseScale = FindProperty("_GreenChGlowPulseScale");
-            MaterialProperty PulseOffset = FindProperty("_GreenChGlowPulseOffset");
-            MaterialProperty PulseCenter = FindProperty("_GreenChGlowRadialCenter");
-            MaterialProperty AnimBand = FindProperty("_GreenChGlowAnimationBand");
-            MaterialProperty AnimMode = FindProperty("_GreenChGlowAnimationMode");
-            MaterialProperty AnimSpeed = FindProperty("_GreenChGlowAnimationSpeed");
-            MaterialProperty AnimStr = FindProperty("_GreenChGlowAnimationStrength");
+            target.SetFloat("_ShowGreenGlow", 1);
 
             EditorGUI.indentLevel += 1;
             DoGreenChZone();
@@ -1890,27 +2309,42 @@ public class SomnaShaderUI : ShaderGUI
             }
             EditorGUI.indentLevel -= 1;
         }
+        else
+        {
+            target.SetFloat("_ShowGreenGlow", 0);
+        }
         EditorGUI.indentLevel -= 2;
     }
 
     //GreenCh AL Settings
-    private static bool showGreenChAL = false;
     void DoGreenChAL()
     {
+        bool showProperties;
+        if (target.GetFloat("_ShowGreenAL") == 1)
+        {
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
+
+        MaterialProperty Mode = FindProperty("_GreenChReactiveMode");
+        MaterialProperty BlendMode = FindProperty("_GreenChReactiveBlendMode");
+        MaterialProperty Tint = FindProperty("_GreenChReactiveTint");
+        MaterialProperty MinBrightness = FindProperty("_GreenChReactiveMinBrightness");
+        MaterialProperty PulseDir = FindProperty("_GreenChReactivePulseDir");
+        MaterialProperty PulseScale = FindProperty("_GreenChReactivePulseScale");
+        MaterialProperty PulseOffset = FindProperty("_GreenChReactivePulseOffset");
+        MaterialProperty PulseCenter = FindProperty("_GreenChReactiveRadialCenter");
+        MaterialProperty Band = FindProperty("_GreenChReactiveBand");
+
         //Create Foldout
         EditorGUI.indentLevel += 2;
-        showGreenChAL = EditorGUILayout.Foldout(showGreenChAL, "AudioLink", true, EditorStyles.foldoutHeader);
-        if (showGreenChAL)
+        showProperties = EditorGUILayout.Foldout(showProperties, "AudioLink", true, EditorStyles.foldoutHeader);
+        if (showProperties)
         {
-            MaterialProperty Mode = FindProperty("_GreenChReactiveMode");
-            MaterialProperty BlendMode = FindProperty("_GreenChReactiveBlendMode");
-            MaterialProperty Tint = FindProperty("_GreenChReactiveTint");
-            MaterialProperty MinBrightness = FindProperty("_GreenChReactiveMinBrightness");
-            MaterialProperty PulseDir = FindProperty("_GreenChReactivePulseDir");
-            MaterialProperty PulseScale = FindProperty("_GreenChReactivePulseScale");
-            MaterialProperty PulseOffset = FindProperty("_GreenChReactivePulseOffset");
-            MaterialProperty PulseCenter = FindProperty("_GreenChReactiveRadialCenter");
-            MaterialProperty Band = FindProperty("_GreenChReactiveBand");
+            target.SetFloat("_ShowGreenAL", 1);
 
             EditorGUI.indentLevel += 1;
             editor.ShaderProperty(Band, MakeLabel("AudioLink Band"));
@@ -1939,6 +2373,10 @@ public class SomnaShaderUI : ShaderGUI
             }
             EditorGUI.indentLevel -= 1;
         }
+        else
+        {
+            target.SetFloat("_ShowGreenAL", 0);
+        }
         EditorGUI.indentLevel -= 2;
     }
 
@@ -1957,25 +2395,36 @@ public class SomnaShaderUI : ShaderGUI
     }
 
     //BlueCh Glow Settings
-    private static bool showBlueChGlow = false;
     void DoBlueChGlow()
     {
+        bool showProperties;
+        if (target.GetFloat("_ShowBlueGlow") == 1)
+        {
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
+
+        MaterialProperty Mode = FindProperty("_BlueChGlowMode");
+        MaterialProperty Tint = FindProperty("_BlueChGlowTint");
+        MaterialProperty MinBrightness = FindProperty("_BlueChGlowMinBrightness");
+        MaterialProperty PulseDir = FindProperty("_BlueChGlowPulseDir");
+        MaterialProperty PulseScale = FindProperty("_BlueChGlowPulseScale");
+        MaterialProperty PulseOffset = FindProperty("_BlueChGlowPulseOffset");
+        MaterialProperty PulseCenter = FindProperty("_BlueChGlowRadialCenter");
+        MaterialProperty AnimBand = FindProperty("_BlueChGlowAnimationBand");
+        MaterialProperty AnimMode = FindProperty("_BlueChGlowAnimationMode");
+        MaterialProperty AnimSpeed = FindProperty("_BlueChGlowAnimationSpeed");
+        MaterialProperty AnimStr = FindProperty("_BlueChGlowAnimationStrength");
+
         //Create Foldout
         EditorGUI.indentLevel += 2;
-        showBlueChGlow = EditorGUILayout.Foldout(showBlueChGlow, "Luma Glow", true, EditorStyles.foldoutHeader);
-        if (showBlueChGlow)
+        showProperties = EditorGUILayout.Foldout(showProperties, "Luma Glow", true, EditorStyles.foldoutHeader);
+        if (showProperties)
         {
-            MaterialProperty Mode = FindProperty("_BlueChGlowMode");
-            MaterialProperty Tint = FindProperty("_BlueChGlowTint");
-            MaterialProperty MinBrightness = FindProperty("_BlueChGlowMinBrightness");
-            MaterialProperty PulseDir = FindProperty("_BlueChGlowPulseDir");
-            MaterialProperty PulseScale = FindProperty("_BlueChGlowPulseScale");
-            MaterialProperty PulseOffset = FindProperty("_BlueChGlowPulseOffset");
-            MaterialProperty PulseCenter = FindProperty("_BlueChGlowRadialCenter");
-            MaterialProperty AnimBand = FindProperty("_BlueChGlowAnimationBand");
-            MaterialProperty AnimMode = FindProperty("_BlueChGlowAnimationMode");
-            MaterialProperty AnimSpeed = FindProperty("_BlueChGlowAnimationSpeed");
-            MaterialProperty AnimStr = FindProperty("_BlueChGlowAnimationStrength");
+            target.SetFloat("_ShowBlueGlow", 1);
 
             EditorGUI.indentLevel += 1;
             DoBlueChZone();
@@ -2012,27 +2461,42 @@ public class SomnaShaderUI : ShaderGUI
             }
             EditorGUI.indentLevel -= 1;
         }
+        else
+        {
+            target.SetFloat("_ShowBlueGlow", 0);
+        }
         EditorGUI.indentLevel -= 2;
     }
 
     //BlueCh AL Settings
-    private static bool showBlueChAL = false;
     void DoBlueChAL()
     {
+        bool showProperties;
+        if (target.GetFloat("_ShowBlueAL") == 1)
+        {
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
+
+        MaterialProperty Mode = FindProperty("_BlueChReactiveMode");
+        MaterialProperty BlendMode = FindProperty("_BlueChReactiveBlendMode");
+        MaterialProperty Tint = FindProperty("_BlueChReactiveTint");
+        MaterialProperty MinBrightness = FindProperty("_BlueChReactiveMinBrightness");
+        MaterialProperty PulseDir = FindProperty("_BlueChReactivePulseDir");
+        MaterialProperty PulseScale = FindProperty("_BlueChReactivePulseScale");
+        MaterialProperty PulseOffset = FindProperty("_BlueChReactivePulseOffset");
+        MaterialProperty PulseCenter = FindProperty("_BlueChReactiveRadialCenter");
+        MaterialProperty Band = FindProperty("_BlueChReactiveBand");
+
         //Create Foldout
         EditorGUI.indentLevel += 2;
-        showBlueChAL = EditorGUILayout.Foldout(showBlueChAL, "AudioLink", true, EditorStyles.foldoutHeader);
-        if (showBlueChAL)
+        showProperties = EditorGUILayout.Foldout(showProperties, "AudioLink", true, EditorStyles.foldoutHeader);
+        if (showProperties)
         {
-            MaterialProperty Mode = FindProperty("_BlueChReactiveMode");
-            MaterialProperty BlendMode = FindProperty("_BlueChReactiveBlendMode");
-            MaterialProperty Tint = FindProperty("_BlueChReactiveTint");
-            MaterialProperty MinBrightness = FindProperty("_BlueChReactiveMinBrightness");
-            MaterialProperty PulseDir = FindProperty("_BlueChReactivePulseDir");
-            MaterialProperty PulseScale = FindProperty("_BlueChReactivePulseScale");
-            MaterialProperty PulseOffset = FindProperty("_BlueChReactivePulseOffset");
-            MaterialProperty PulseCenter = FindProperty("_BlueChReactiveRadialCenter");
-            MaterialProperty Band = FindProperty("_BlueChReactiveBand");
+            target.SetFloat("_ShowBlueAL", 1);
 
             EditorGUI.indentLevel += 1;
             editor.ShaderProperty(Band, MakeLabel("AudioLink Band"));
@@ -2061,6 +2525,10 @@ public class SomnaShaderUI : ShaderGUI
             }
             EditorGUI.indentLevel -= 1;
         }
+        else
+        {
+            target.SetFloat("_ShowBlueAL", 0);
+        }
         EditorGUI.indentLevel -= 2;
     }
 
@@ -2079,25 +2547,36 @@ public class SomnaShaderUI : ShaderGUI
     }
 
     //AlphaCh Glow Settings
-    private static bool showAlphaChGlow = false;
     void DoAlphaChGlow()
     {
+        bool showProperties;
+        if (target.GetFloat("_ShowAlphaGlow") == 1)
+        {
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
+
+        MaterialProperty Mode = FindProperty("_AlphaChGlowMode");
+        MaterialProperty Tint = FindProperty("_AlphaChGlowTint");
+        MaterialProperty MinBrightness = FindProperty("_AlphaChGlowMinBrightness");
+        MaterialProperty PulseDir = FindProperty("_AlphaChGlowPulseDir");
+        MaterialProperty PulseScale = FindProperty("_AlphaChGlowPulseScale");
+        MaterialProperty PulseOffset = FindProperty("_AlphaChGlowPulseOffset");
+        MaterialProperty PulseCenter = FindProperty("_AlphaChGlowRadialCenter");
+        MaterialProperty AnimBand = FindProperty("_AlphaChGlowAnimationBand");
+        MaterialProperty AnimMode = FindProperty("_AlphaChGlowAnimationMode");
+        MaterialProperty AnimSpeed = FindProperty("_AlphaChGlowAnimationSpeed");
+        MaterialProperty AnimStr = FindProperty("_AlphaChGlowAnimationStrength");
+
         //Create Foldout
         EditorGUI.indentLevel += 2;
-        showAlphaChGlow = EditorGUILayout.Foldout(showAlphaChGlow, "Luma Glow", true, EditorStyles.foldoutHeader);
-        if (showAlphaChGlow)
+        showProperties = EditorGUILayout.Foldout(showProperties, "Luma Glow", true, EditorStyles.foldoutHeader);
+        if (showProperties)
         {
-            MaterialProperty Mode = FindProperty("_AlphaChGlowMode");
-            MaterialProperty Tint = FindProperty("_AlphaChGlowTint");
-            MaterialProperty MinBrightness = FindProperty("_AlphaChGlowMinBrightness");
-            MaterialProperty PulseDir = FindProperty("_AlphaChGlowPulseDir");
-            MaterialProperty PulseScale = FindProperty("_AlphaChGlowPulseScale");
-            MaterialProperty PulseOffset = FindProperty("_AlphaChGlowPulseOffset");
-            MaterialProperty PulseCenter = FindProperty("_AlphaChGlowRadialCenter");
-            MaterialProperty AnimBand = FindProperty("_AlphaChGlowAnimationBand");
-            MaterialProperty AnimMode = FindProperty("_AlphaChGlowAnimationMode");
-            MaterialProperty AnimSpeed = FindProperty("_AlphaChGlowAnimationSpeed");
-            MaterialProperty AnimStr = FindProperty("_AlphaChGlowAnimationStrength");
+            target.SetFloat("_ShowAlphaGlow", 1);
 
             EditorGUI.indentLevel += 1;
             DoAlphaChZone();
@@ -2134,28 +2613,42 @@ public class SomnaShaderUI : ShaderGUI
             }
             EditorGUI.indentLevel -= 1;
         }
+        else
+        {
+            target.SetFloat("_ShowAlphaGlow", 0);
+        }
         EditorGUI.indentLevel -= 2;
     }
 
     //AlphaCh AL Settings
-    private static bool showAlphaChAL = false;
     void DoAlphaChAL()
     {
+        bool showProperties;
+        if (target.GetFloat("_ShowAlphaAL") == 1)
+        {
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
+
+        MaterialProperty Mode = FindProperty("_AlphaChReactiveMode");
+        MaterialProperty BlendMode = FindProperty("_AlphaChReactiveBlendMode");
+        MaterialProperty Tint = FindProperty("_AlphaChReactiveTint");
+        MaterialProperty MinBrightness = FindProperty("_AlphaChReactiveMinBrightness");
+        MaterialProperty PulseDir = FindProperty("_AlphaChReactivePulseDir");
+        MaterialProperty PulseScale = FindProperty("_AlphaChReactivePulseScale");
+        MaterialProperty PulseOffset = FindProperty("_AlphaChReactivePulseOffset");
+        MaterialProperty PulseCenter = FindProperty("_AlphaChReactiveRadialCenter");
+        MaterialProperty Band = FindProperty("_AlphaChReactiveBand");
 
         //Create Foldout
         EditorGUI.indentLevel += 2;
-        showAlphaChAL = EditorGUILayout.Foldout(showAlphaChAL, "AudioLink", true, EditorStyles.foldoutHeader);
-        if (showAlphaChAL)
+        showProperties = EditorGUILayout.Foldout(showProperties, "AudioLink", true, EditorStyles.foldoutHeader);
+        if (showProperties)
         {
-            MaterialProperty Mode = FindProperty("_AlphaChReactiveMode");
-            MaterialProperty BlendMode = FindProperty("_AlphaChReactiveBlendMode");
-            MaterialProperty Tint = FindProperty("_AlphaChReactiveTint");
-            MaterialProperty MinBrightness = FindProperty("_AlphaChReactiveMinBrightness");
-            MaterialProperty PulseDir = FindProperty("_AlphaChReactivePulseDir");
-            MaterialProperty PulseScale = FindProperty("_AlphaChReactivePulseScale");
-            MaterialProperty PulseOffset = FindProperty("_AlphaChReactivePulseOffset");
-            MaterialProperty PulseCenter = FindProperty("_AlphaChReactiveRadialCenter");
-            MaterialProperty Band = FindProperty("_AlphaChReactiveBand");
+            target.SetFloat("_ShowAlphaAL", 1);
 
             EditorGUI.indentLevel += 1;
             editor.ShaderProperty(Band, MakeLabel("AudioLink Band"));
@@ -2184,6 +2677,10 @@ public class SomnaShaderUI : ShaderGUI
             }
             EditorGUI.indentLevel -= 1;
         }
+        else
+        {
+            target.SetFloat("_ShowAlphaAL", 0);
+        }
         EditorGUI.indentLevel -= 2;
     }
 
@@ -2202,25 +2699,36 @@ public class SomnaShaderUI : ShaderGUI
     }
 
     //Sparkle Glow Settings
-    private static bool showSparkleGlow = false;
     void DoSparkleGlow()
     {
+        bool showProperties;
+        if (target.GetFloat("_ShowSparkleGlow") == 1)
+        {
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
+
+        MaterialProperty Mode = FindProperty("_SparkleGlowMode");
+        MaterialProperty Tint = FindProperty("_SparkleGlowTint");
+        MaterialProperty MinBrightness = FindProperty("_SparkleGlowMinBrightness");
+        MaterialProperty PulseDir = FindProperty("_SparkleGlowPulseDir");
+        MaterialProperty PulseScale = FindProperty("_SparkleGlowPulseScale");
+        MaterialProperty PulseOffset = FindProperty("_SparkleGlowPulseOffset");
+        MaterialProperty PulseCenter = FindProperty("_SparkleGlowRadialCenter");
+        MaterialProperty AnimBand = FindProperty("_SparkleGlowAnimationBand");
+        MaterialProperty AnimMode = FindProperty("_SparkleGlowAnimationMode");
+        MaterialProperty AnimSpeed = FindProperty("_SparkleGlowAnimationSpeed");
+        MaterialProperty AnimStr = FindProperty("_SparkleGlowAnimationStrength");
+
         //Create Foldout
         EditorGUI.indentLevel += 2;
-        showSparkleGlow = EditorGUILayout.Foldout(showSparkleGlow, "Sparkle Glow", true, EditorStyles.foldoutHeader);
-        if (showSparkleGlow)
+        showProperties = EditorGUILayout.Foldout(showProperties, "Sparkle Glow", true, EditorStyles.foldoutHeader);
+        if (showProperties)
         {
-            MaterialProperty Mode = FindProperty("_SparkleGlowMode");
-            MaterialProperty Tint = FindProperty("_SparkleGlowTint");
-            MaterialProperty MinBrightness = FindProperty("_SparkleGlowMinBrightness");
-            MaterialProperty PulseDir = FindProperty("_SparkleGlowPulseDir");
-            MaterialProperty PulseScale = FindProperty("_SparkleGlowPulseScale");
-            MaterialProperty PulseOffset = FindProperty("_SparkleGlowPulseOffset");
-            MaterialProperty PulseCenter = FindProperty("_SparkleGlowRadialCenter");
-            MaterialProperty AnimBand = FindProperty("_SparkleGlowAnimationBand");
-            MaterialProperty AnimMode = FindProperty("_SparkleGlowAnimationMode");
-            MaterialProperty AnimSpeed = FindProperty("_SparkleGlowAnimationSpeed");
-            MaterialProperty AnimStr = FindProperty("_SparkleGlowAnimationStrength");
+            target.SetFloat("_ShowSparkleGlow", 1);
 
             EditorGUI.indentLevel += 1;
             DoSparkleZone();
@@ -2258,27 +2766,42 @@ public class SomnaShaderUI : ShaderGUI
             }
             EditorGUI.indentLevel -= 1;
         }
+        else
+        {
+            target.SetFloat("_ShowSparkleGlow", 0);
+        }
         EditorGUI.indentLevel -= 2;
     }
 
     //Sparkle AL Settings
-    private static bool showSparkleAL = false;
     void DoSparkleAL()
     {
+        bool showProperties;
+        if (target.GetFloat("_ShowSparkleAL") == 1)
+        {
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
+
+        MaterialProperty Mode = FindProperty("_SparkleReactiveMode");
+        MaterialProperty BlendMode = FindProperty("_SparkleReactiveBlendMode");
+        MaterialProperty Tint = FindProperty("_SparkleReactiveTint");
+        MaterialProperty MinBrightness = FindProperty("_SparkleReactiveMinBrightness");
+        MaterialProperty PulseDir = FindProperty("_SparkleReactivePulseDir");
+        MaterialProperty PulseScale = FindProperty("_SparkleReactivePulseScale");
+        MaterialProperty PulseOffset = FindProperty("_SparkleReactivePulseOffset");
+        MaterialProperty PulseCenter = FindProperty("_SparkleReactiveRadialCenter");
+        MaterialProperty Band = FindProperty("_SparkleReactiveBand");
+
         //Create Foldout
         EditorGUI.indentLevel += 2;
-        showSparkleAL = EditorGUILayout.Foldout(showSparkleAL, "Sparkle AudioLink", true, EditorStyles.foldoutHeader);
-        if (showSparkleAL)
+        showProperties = EditorGUILayout.Foldout(showProperties, "Sparkle AudioLink", true, EditorStyles.foldoutHeader);
+        if (showProperties)
         {
-            MaterialProperty Mode = FindProperty("_SparkleReactiveMode");
-            MaterialProperty BlendMode = FindProperty("_SparkleReactiveBlendMode");
-            MaterialProperty Tint = FindProperty("_SparkleReactiveTint");
-            MaterialProperty MinBrightness = FindProperty("_SparkleReactiveMinBrightness");
-            MaterialProperty PulseDir = FindProperty("_SparkleReactivePulseDir");
-            MaterialProperty PulseScale = FindProperty("_SparkleReactivePulseScale");
-            MaterialProperty PulseOffset = FindProperty("_SparkleReactivePulseOffset");
-            MaterialProperty PulseCenter = FindProperty("_SparkleReactiveRadialCenter");
-            MaterialProperty Band = FindProperty("_SparkleReactiveBand");
+            target.SetFloat("_ShowSparkleAL", 1);
 
             EditorGUI.indentLevel += 1;
             editor.ShaderProperty(Band, MakeLabel("AudioLink Band"));
@@ -2307,18 +2830,33 @@ public class SomnaShaderUI : ShaderGUI
             }
             EditorGUI.indentLevel -= 1;
         }
+        else
+        {
+            target.SetFloat("_ShowSparkleAL", 0);
+        }
         EditorGUI.indentLevel -= 2;
     }
 
     //Sparkles
-    private static bool showSparkles = false;
     void DoSparkles()
     {
+        bool showProperties;
+        if (target.GetFloat("_ShowSparkles") == 1)
+        {
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
+
         EditorGUI.indentLevel += 2;
-        showSparkles = EditorGUILayout.Foldout(showSparkles, "Sparkles", true, styleCheck(target.GetFloat("_EnableSparkles") == 1));
-        if (showSparkles)
+        showProperties = EditorGUILayout.Foldout(showProperties, "Sparkles", true, EditorStyles.foldoutHeader);
+
+        if (showProperties)
         {
             EditorGUI.indentLevel += 1;
+            target.SetFloat("_ShowSparkles", 1);
             MaterialProperty tog = FindProperty("_EnableSparkles");
             float toglFl = target.GetFloat("_EnableSparkles");
             editor.ShaderProperty(tog, MakeLabel("Enable Sparkles"));
@@ -2366,14 +2904,25 @@ public class SomnaShaderUI : ShaderGUI
     }
 
     //Scrolling Rainbow
-    private static bool showDoRainbow = false;
     void DoRainbow()
     {
+        bool showProperties;
+        if (target.GetFloat("_ShowRainbow") == 1)
+        {
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
+
         EditorGUI.indentLevel += 2;
-        showDoRainbow = EditorGUILayout.Foldout(showDoRainbow, "Scrolling Rainbow", true, styleCheck(target.GetFloat("_EnableScrollingRainbow") == 1));
-        if (showDoRainbow)
+        showProperties = EditorGUILayout.Foldout(showProperties, "Scrolling Rainbow", true, EditorStyles.foldoutHeader);
+
+        if (showProperties)
         {
             EditorGUI.indentLevel += 1;
+            target.SetFloat("_ShowRainbow", 1);
             MaterialProperty tog = FindProperty("_EnableScrollingRainbow");
             float toglFl = target.GetFloat("_EnableScrollingRainbow");
             editor.ShaderProperty(tog, MakeLabel("Enable Rainbow"));
@@ -2427,20 +2976,33 @@ public class SomnaShaderUI : ShaderGUI
 
             EditorGUI.indentLevel -= 1;
         }
+        else
+        {
+            target.SetFloat("_ShowRainbow", 0);
+        }
         EditorGUI.indentLevel -= 2;
     }
 
     //Iridescence
-    private static bool showIridescense = false;
     void DoIridescence()
     {
-        EditorGUI.indentLevel += 2;
-        showIridescense = EditorGUILayout.Foldout(showIridescense, "Iridescence", true, EditorStyles.foldoutHeader);
+        bool showProperties;
+        if (target.GetFloat("_ShowIridescence") == 1)
+        {
+            showProperties = true;
+        }
+        else
+        {
+            showProperties = false;
+        }
 
-        if (showIridescense)
+        EditorGUI.indentLevel += 2;
+        showProperties = EditorGUILayout.Foldout(showProperties, "Iridescence", true, EditorStyles.foldoutHeader);
+
+        if (showProperties)
         {
             EditorGUI.indentLevel += 1;
-            //target.SetFloat("_ShowIridescence", 1);
+            target.SetFloat("_ShowIridescence", 1);
             MaterialProperty tog = FindProperty("_Enableiridescence");
             float toglFl = target.GetFloat("_Enableiridescence");
             editor.ShaderProperty(tog, MakeLabel("Enable Iridescence"));
@@ -2483,6 +3045,10 @@ public class SomnaShaderUI : ShaderGUI
             }
 
             EditorGUI.indentLevel -= 1;
+        }
+        else
+        {
+            target.SetFloat("_ShowIridescence", 0);
         }
         EditorGUI.indentLevel -= 2;
     }
@@ -2565,7 +3131,7 @@ public class SomnaShaderUI : ShaderGUI
             editor.RegisterPropertyChangeUndo("Blend Mode");
             target.SetFloat("_BlendModeIndex", (float)mode);
 
-            if (enableOutline)
+            if (enableOutline is true)
             {
                 if (target.GetFloat("_BlendModeIndex") == 0)
                 {
@@ -2583,7 +3149,7 @@ public class SomnaShaderUI : ShaderGUI
                 }
             }
 
-            if (enableOutline)
+            else if (enableOutline is false)
             {
                 if (target.GetFloat("_BlendModeIndex") == 0)
                 {
@@ -2600,6 +3166,7 @@ public class SomnaShaderUI : ShaderGUI
                     //this.target.SetInt("_ALPHAPREMULTIPLY", 0);
                     this.target.EnableKeyword("_BLEND_OFF");
                 }
+
                 else if (target.GetFloat("_BlendModeIndex") == 1)
                 {
                     this.target.SetOverrideTag("RenderType", "TransparentCutout");
@@ -2653,7 +3220,7 @@ public class SomnaShaderUI : ShaderGUI
         if (EditorGUI.EndChangeCheck())
         {
             editor.RegisterPropertyChangeUndo("Enable Outline");
-            if (!enableOutline)
+            if (enableOutline is false)
             {
                 if ((BlendMode)target.GetFloat("_BlendModeIndex") == BlendMode.Transparent)
                 {
@@ -2669,7 +3236,7 @@ public class SomnaShaderUI : ShaderGUI
                 }
                 enableOutline = true;
             }
-            else
+            else if (enableOutline is true)
             {
                 if ((BlendMode)target.GetFloat("_BlendModeIndex") == BlendMode.Transparent)
                 {
