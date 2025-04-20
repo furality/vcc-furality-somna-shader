@@ -2590,10 +2590,11 @@ public class SomnaShaderUI : ShaderGUI
             EditorGUILayout.LabelField($"QUEUE: {target.renderQueue}", label, GUILayout.ExpandWidth(true));
             EditorGUILayout.EndVertical();
             EditorGUILayout.EndHorizontal();
-            if (target.renderQueue == (int)RenderQueue.Geometry)
+            BlendMode mode = (BlendMode)target.GetFloat("_BlendModeIndex");
+            if (mode == BlendMode.Opaque)
             {
                 target.renderQueue = (int)RenderQueue.Geometry + renderQueueOffset;
-            } else if (target.renderQueue == (int)RenderQueue.AlphaTest)
+            } else if (mode == BlendMode.Cutout)
             {
                 target.renderQueue = (int)RenderQueue.AlphaTest + renderQueueOffset;
             } else {
