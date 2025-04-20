@@ -111,7 +111,7 @@ Shader "Furality/Somna Shader"
 		[ToggleUI]_UDIMDiscardRow0_1("UDIMDiscardRow0_1", Float) = 0
 		[ToggleUI]_UDIMDiscardRow0_2("UDIMDiscardRow0_2", Float) = 0
 		[ToggleUI]_UDIMDiscardRow0_3("UDIMDiscardRow0_3", Float) = 0
-		_SheetSize("Sheet Size (Square)", Int) = 3
+		_SheetSize("_SheetSize", Float) = 3
 		_StarshineNormalIntensity("StarshineNormalIntensity", Range( 0 , 1)) = 1
 		_StarshineSmoothness("StarshineSmoothness", Range( 0 , 1)) = 1
 		[ToggleUI]_StardustZwrite("StardustZwrite", Float) = 1
@@ -5091,7 +5091,7 @@ Shader "Furality/Somna Shader"
 			uniform sampler2D _Constellation;
 			uniform float2 _ConstellationSpeed;
 			uniform float4 _Constellation_ST;
-			uniform uint _SheetSize;
+			uniform float _SheetSize;
 			uniform float _ConstellationAmount;
 			uniform float _FadeFreqency;
 			float3 ProbeDir(  )
@@ -5688,13 +5688,12 @@ Shader "Furality/Somna Shader"
 				float3 temp_output_3041_0 = frac( ( appendResult3042 * float3(0.1031,0.103,0.0973) ) );
 				float dotResult3045 = dot( temp_output_3041_0 , ( (temp_output_3041_0).yzx + 33.33 ) );
 				float3 temp_output_3049_0 = ( temp_output_3041_0 + dotResult3045 );
-				float2 temp_cast_21 = _SheetSize;
+				float2 temp_cast_21 = (_SheetSize).xx;
 				float2 appendResult3037 = (float2(floor( (float2( 0,0 ) + (frac( ( ( (temp_output_3049_0).xx + (temp_output_3049_0).yz ) * (temp_output_3049_0).zy ) ) - float2( 0,0 )) * (temp_cast_21 - float2( 0,0 )) / (float2( 1,1 ) - float2( 0,0 ))) )));
 				float cos3063 = cos( radians( (0.0 + (simplePerlin2D3005 - -1.0) * (360.0 - 0.0) / (1.0 - -1.0)) ) );
 				float sin3063 = sin( radians( (0.0 + (simplePerlin2D3005 - -1.0) * (360.0 - 0.0) / (1.0 - -1.0)) ) );
 				float2 rotator3063 = mul( ( appendResult3037 + frac( ( uv_Constellation + temp_output_2969_0 ) ) ) - ( appendResult3037 + float2( 0.5,0.5 ) ) , float2x2( cos3063 , -sin3063 , sin3063 , cos3063 )) + ( appendResult3037 + float2( 0.5,0.5 ) );
-				float2 temp_cast_22 = _SheetSize;
-				float4 tex2DNode2972 = tex2D( _Constellation, ( rotator3063 / temp_cast_22 ) );
+				float4 tex2DNode2972 = tex2D( _Constellation, ( rotator3063 / _SheetSize ) );
 				float2 appendResult10_g13112 = (float2(0.8 , 0.8));
 				float2 temp_output_11_0_g13112 = ( abs( (frac( ( temp_output_2969_0 + uv_Constellation ) )*2.0 + -1.0) ) - appendResult10_g13112 );
 				float2 break16_g13112 = ( 1.0 - ( temp_output_11_0_g13112 / max( fwidth( temp_output_11_0_g13112 ) , float2( 1E-05,1E-05 ) ) ) );
@@ -7051,7 +7050,7 @@ Node;AmplifyShaderEditor.FractNode;3056;9234.253,9559.981;Inherit;False;1;0;FLOA
 Node;AmplifyShaderEditor.TextureCoordinatesNode;3029;9364.359,10184.36;Inherit;False;0;-1;2;3;2;SAMPLER2D;;False;0;FLOAT2;3,3;False;1;FLOAT2;0,0;False;5;FLOAT2;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4
 Node;AmplifyShaderEditor.DynamicAppendNode;3037;9844.148,9560.431;Inherit;False;FLOAT2;4;0;FLOAT2;0,0;False;1;FLOAT;0;False;2;FLOAT;0;False;3;FLOAT;0;False;1;FLOAT2;0
 Node;AmplifyShaderEditor.FloorOpNode;3038;9686.849,9551.53;Inherit;False;1;0;FLOAT2;0,0;False;1;FLOAT2;0
-Node;AmplifyShaderEditor.SimpleDivideOpNode;3030;10224.91,9582.339;Inherit;False;2;0;FLOAT2;0,0;False;1;UINT;1,0;False;1;FLOAT2;0
+Node;AmplifyShaderEditor.SimpleDivideOpNode;3030;10224.91,9582.339;Inherit;False;2;0;FLOAT2;0,0;False;1;FLOAT;1;False;1;FLOAT2;0
 Node;AmplifyShaderEditor.SimpleAddOpNode;3035;10088.47,9560.966;Inherit;False;2;2;0;FLOAT2;0,0;False;1;FLOAT2;0,0;False;1;FLOAT2;0
 Node;AmplifyShaderEditor.SamplerNode;3028;10482.61,9255.741;Inherit;True;Property;_TextureSample8;Texture Sample 8;121;0;Create;True;0;0;0;False;0;False;-1;None;None;True;0;False;white;Auto;False;Instance;2972;Auto;Texture2D;8;0;SAMPLER2D;;False;1;FLOAT2;0,0;False;2;FLOAT;0;False;3;FLOAT2;0,0;False;4;FLOAT2;0,0;False;5;FLOAT;1;False;6;FLOAT;0;False;7;SAMPLERSTATE;;False;6;COLOR;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4;FLOAT3;5
 Node;AmplifyShaderEditor.SamplerNode;2972;10396.77,9546.512;Inherit;True;Property;_Constellation;Constellation;127;0;Create;True;0;0;0;False;0;False;-1;8aeb5c28dc9d8bc46885382013e946b2;8aeb5c28dc9d8bc46885382013e946b2;True;0;False;white;Auto;False;Object;-1;Auto;Texture2D;8;0;SAMPLER2D;;False;1;FLOAT2;0,0;False;2;FLOAT;0;False;3;FLOAT2;0,0;False;4;FLOAT2;0,0;False;5;FLOAT;1;False;6;FLOAT;0;False;7;SAMPLERSTATE;;False;6;COLOR;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4;FLOAT3;5
@@ -7154,7 +7153,7 @@ Node;AmplifyShaderEditor.SimpleMultiplyOpNode;3055;8943.852,9558.981;Inherit;Fal
 Node;AmplifyShaderEditor.SimpleSubtractOpNode;3106;9444.485,9824.67;Inherit;False;2;0;FLOAT;0;False;1;FLOAT;0;False;1;FLOAT;0
 Node;AmplifyShaderEditor.RangedFloatNode;3107;9249.485,9887.069;Inherit;False;Constant;_Float78;Float 78;116;0;Create;True;0;0;0;False;0;False;1;0;0;0;0;1;FLOAT;0
 Node;AmplifyShaderEditor.TFHCRemapNode;3036;9487.85,9552.929;Inherit;False;5;0;FLOAT2;0,0;False;1;FLOAT2;0,0;False;2;FLOAT2;1,1;False;3;FLOAT2;0,0;False;4;FLOAT2;2,2;False;1;FLOAT2;0
-Node;AmplifyShaderEditor.IntNode;3108;9681.085,9806.47;Inherit;False;Property;_SheetSize;Sheet Size (Square);120;0;Create;False;0;0;0;False;0;False;3;3;True;0;1;UINT;0
+Node;AmplifyShaderEditor.RangedFloatNode;3109;9491.285,9742.771;Inherit;False;Property;_SheetSize;_SheetSize;120;0;Create;False;0;0;0;False;0;False;3;0;0;0;0;1;FLOAT;0
 Node;AmplifyShaderEditor.TemplateMultiPassMasterNode;2220;8031.287,-50.64004;Float;False;True;-1;3;SomnaShaderUI;0;12;Furality/Somna Shader;088ce90f5f78914459e55515008cbb32;True;FORWARD;0;0;FORWARD;6;True;True;1;0;True;_SourceBlendRGB;0;True;_DestinationBlendRGB;0;1;False;;0;False;;True;0;False;_SourceBlendRGB;0;False;;False;False;False;False;False;False;False;False;False;True;0;False;;True;True;0;True;_Culling;False;True;True;True;True;True;0;False;;False;False;False;False;False;False;True;True;True;0;True;_StencilReference;255;False;;255;False;;7;False;;3;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;True;True;1;True;_ZWrite;True;3;False;;False;True;3;RenderType=Opaque=RenderType;Queue=Geometry=Queue=0;DisableBatching=False=DisableBatching;True;7;False;0;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;1;LightMode=ForwardBase;False;False;0;;0;0;Standard;3;Vertex Position,InvertActionOnDeselection;0;638787892626673367;Receive Shadows;1;0;Built-in Fog;1;0;0;5;True;True;True;True;True;False;;False;0
 Node;AmplifyShaderEditor.TemplateMultiPassMasterNode;2224;8948.45,-130.9668;Float;False;False;-1;3;AmplifyShaderEditor.MaterialInspector;0;12;New Amplify Shader;088ce90f5f78914459e55515008cbb32;True;shadowcaster;0;4;shadowcaster;6;False;True;0;1;False;;0;False;;0;1;False;;0;False;;True;0;False;;0;False;;False;False;False;False;False;False;False;False;False;True;0;False;;False;True;0;False;;False;True;True;True;True;True;0;False;;False;False;False;False;False;False;False;True;False;0;False;;255;False;;255;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;False;True;1;False;;True;3;False;;False;True;3;RenderType=Opaque=RenderType;Queue=Geometry=Queue=0;DisableBatching=False=DisableBatching;True;2;False;0;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;1;False;;True;3;False;;False;True;1;LightMode=shadowcaster;False;False;0;;0;0;Standard;0;False;0
 Node;AmplifyShaderEditor.TemplateMultiPassMasterNode;2221;9135.833,462.9228;Float;False;False;-1;3;AmplifyShaderEditor.MaterialInspector;0;12;New Amplify Shader;088ce90f5f78914459e55515008cbb32;True;forwardad;0;1;forwardad;6;False;True;0;1;False;;0;False;;0;1;False;;0;False;;True;0;False;;0;False;;False;False;False;False;False;False;False;False;False;True;0;False;;False;True;0;False;;False;True;True;True;True;True;0;False;;False;False;False;False;False;False;False;True;False;0;False;;255;False;;255;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;False;True;1;False;;True;3;False;;False;True;3;RenderType=Opaque=RenderType;Queue=Geometry=Queue=0;DisableBatching=False=DisableBatching;True;2;False;0;False;True;4;1;False;;1;False;;0;1;False;;0;False;;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;2;False;;False;False;True;1;LightMode=forwardadd;False;False;0;;0;0;Standard;0;False;0
@@ -7966,7 +7965,7 @@ WireConnection;3056;0;3055;0
 WireConnection;3037;0;3038;0
 WireConnection;3038;0;3036;0
 WireConnection;3030;0;3063;0
-WireConnection;3030;1;3108;0
+WireConnection;3030;1;3109;0
 WireConnection;3035;0;3037;0
 WireConnection;3035;1;3062;0
 WireConnection;2972;1;3030;0
@@ -8077,7 +8076,7 @@ WireConnection;3055;0;3052;0
 WireConnection;3055;1;3054;0
 WireConnection;3106;1;3107;0
 WireConnection;3036;0;3056;0
-WireConnection;3036;4;3108;0
+WireConnection;3036;4;3109;0
 WireConnection;2220;0;562;0
 WireConnection;2220;1;1176;0
 WireConnection;2220;2;1182;0
@@ -8094,4 +8093,4 @@ WireConnection;2222;1;1953;0
 WireConnection;2223;0;1998;0
 WireConnection;2223;1;1999;0
 ASEEND*/
-//CHKSM=C43E8B75174177BEC4815E5C58360733AB9BB64E
+//CHKSM=9B1DE538E339FE1B711BC4CD4CBBF31CA8800DD5

@@ -24,6 +24,7 @@ Material:
   m_CustomRenderQueue: 2000
   stringTagMap:
     RenderType: Opaque
+    _FoldoutStates: '{"foldoutNames":["showMain","showMaskMaps","showEffects","showLighting","showEmission","showTileDiscard","showRenderSettings"],"foldoutValues":[true,false,true,true,false,false,false]}'
   disabledShaderPasses: []
   m_LockedProperties: 
   m_SavedProperties:
@@ -374,6 +375,8 @@ Material:
     - _StarshineIntensity: 2
     - _StarshineMask: 2
     - _StarshineMetallic: 1
+    - _StarshineNormalIntensity: 1
+    - _StarshineSmoothness: 1
     - _StarshineSpeed: 0.1
     - _StencilReference: 101
     - _TileDiscardUV: 0
