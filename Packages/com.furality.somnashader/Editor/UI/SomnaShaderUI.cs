@@ -5,6 +5,7 @@ using UnityEditor;
 using System.Collections.Generic;
 using System;
 using UnityEngine.Rendering;
+using System.Linq;
 
 
 public class SomnaShaderUI : ShaderGUI
@@ -158,16 +159,8 @@ public class SomnaShaderUI : ShaderGUI
             return EditorStyles.foldoutHeader;
     }
 
-
-    //This is where the GUI is drawn
-    public override void OnGUI(
-        MaterialEditor editor, MaterialProperty[] properties
-    )
+    void Setup()
     {
-        this.editor = editor;
-        this.properties = properties;
-        this.target = editor.target as Material;
-        LoadFoldStates(target);
         if (props.Count != properties.Length)
         {
             props.Clear();
@@ -178,6 +171,33 @@ public class SomnaShaderUI : ShaderGUI
                 props.Add(properties[i].name, properties[i]);
             }
         }
+        LoadFoldStates(target);
+    }
+
+    void UpdateProps(MaterialProperty[] propertiesLocal)
+    {
+        for (int i = 0; i < propertiesLocal.Length; i++)
+        {
+            if (props.ContainsKey(props[properties[i].name].name))
+            {
+                #if DEBUG
+                Debug.Log($"Furality Shader GUI: {properties[i].name} {props[properties[i].name].name}");
+                #endif
+                props[propertiesLocal[i].name] = propertiesLocal[i];
+            }
+        }
+    }
+
+
+    //This is where the GUI is drawn
+    public override void OnGUI(
+        MaterialEditor editor, MaterialProperty[] properties
+    )
+    {
+        this.editor = editor;
+        this.properties = properties;
+        this.target = editor.target as Material;
+        Setup();
         string workflow = "_Workflow";
 
         if (!this.target.IsKeywordEnabled("_BLEND_OFF") &&
@@ -242,6 +262,12 @@ public class SomnaShaderUI : ShaderGUI
         DoTileDiscard();
 
         RenderSettings();
+        #if FURALITY_SHADER_UI_DEBUG
+        if (GUILayout.Button("Update Shader Properties"))
+        {
+            UpdateProps(properties);
+        }
+        #endif
 
         if (GUI.changed)
         {
@@ -2491,7 +2517,9 @@ public class SomnaShaderUI : ShaderGUI
 
         if (EditorGUI.EndChangeCheck())
         {
+            #if FURALITY_SHADER_UI_DEBUG
             Debug.Log($"Furality Shader GUI: {mode}");
+            #endif
             editor.RegisterPropertyChangeUndo("Blend Mode");
             target.SetFloat("_BlendModeIndex", (float)mode);
 
@@ -2562,10 +2590,11 @@ public class SomnaShaderUI : ShaderGUI
             EditorGUILayout.LabelField($"QUEUE: {target.renderQueue}", label, GUILayout.ExpandWidth(true));
             EditorGUILayout.EndVertical();
             EditorGUILayout.EndHorizontal();
-            if (target.renderQueue == (int)RenderQueue.Geometry)
+            BlendMode mode = (BlendMode)target.GetFloat("_BlendModeIndex");
+            if (mode == BlendMode.Opaque)
             {
-                target.renderQueue = (int)RenderQueue.Transparent + renderQueueOffset;
-            } else if (target.renderQueue == (int)RenderQueue.AlphaTest)
+                target.renderQueue = (int)RenderQueue.Geometry + renderQueueOffset;
+            } else if (mode == BlendMode.Cutout)
             {
                 target.renderQueue = (int)RenderQueue.AlphaTest + renderQueueOffset;
             } else {
