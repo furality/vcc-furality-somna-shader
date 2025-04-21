@@ -1,5 +1,4 @@
 ﻿#if UNITY_EDITOR
-//#define FURALITY_SHADER_UI_DEBUG
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
@@ -45,10 +44,96 @@ public class SomnaShaderUI : ShaderGUI
         Transparent = 2
     }
 
-    private GUIStyle selected;
+    private static GUIStyle selected;
     private GUIStyle label;
     Dictionary<string, MaterialProperty> props = new Dictionary<string, MaterialProperty>();
     Dictionary<string, bool> _foldoutState = new Dictionary<string, bool>();
+    Vector2 debugScrollPosition = Vector2.zero;
+    string debugPropertySearchQuery = ""; // Add this line
+
+    void DebugState()
+    {
+        #if FURALITY_SHADER_UI_DEBUG
+        GUILayout.BeginVertical("box"); 
+        EditorGUILayout.LabelField("Furality Shader UI Debug", EditorStyles.boldLabel);
+        
+        // Display Foldout States
+        EditorGUILayout.LabelField("Foldout States:", EditorStyles.boldLabel);
+        if (_foldoutState != null)
+        {
+            foreach (var state in _foldoutState)
+            {
+                EditorGUILayout.LabelField($"{state.Key}: {state.Value}");
+            }
+        }
+        else
+        {
+            EditorGUILayout.LabelField("Foldout States array is null. That's not good.");
+        }
+        
+        GUILayout.EndVertical();
+        GUILayout.Space(10);
+        GUILayout.BeginVertical("box");
+        // Display Material Properties
+        EditorGUILayout.LabelField("Material Properties:", EditorStyles.boldLabel);
+        
+        // Add Search Field
+        debugPropertySearchQuery = EditorGUILayout.TextField("Search:", debugPropertySearchQuery);
+
+        // Start the box style for background and border
+        // Begin ScrollView for properties
+        debugScrollPosition = EditorGUILayout.BeginScrollView(debugScrollPosition, GUILayout.Height(200)); 
+        if (properties != null)
+        {
+            int displayedCount = 0;
+            foreach (var prop in properties)
+            {
+                // Filter properties based on search query
+                if (string.IsNullOrEmpty(debugPropertySearchQuery) || 
+                    prop.name.IndexOf(debugPropertySearchQuery, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    string valueString = "N/A";
+                    switch (prop.type)
+                    {
+                        case MaterialProperty.PropType.Float:
+                        case MaterialProperty.PropType.Range:
+                            valueString = prop.floatValue.ToString();
+                            break;
+                        case MaterialProperty.PropType.Int:
+                             valueString = prop.intValue.ToString();
+                             break;
+                        case MaterialProperty.PropType.Color:
+                            valueString = prop.colorValue.ToString();
+                            break;
+                        case MaterialProperty.PropType.Vector:
+                            valueString = prop.vectorValue.ToString();
+                            break;
+                        case MaterialProperty.PropType.Texture:
+                            valueString = prop.textureValue != null ? prop.textureValue.name : "None";
+                            break;
+                        default:
+                             valueString = "(Unsupported Type)";
+                             break;
+                    }
+                    EditorGUILayout.LabelField($"{prop.name} ({prop.type}): {valueString}");
+                    displayedCount++;
+                }
+            }
+             if (displayedCount == 0 && !string.IsNullOrEmpty(debugPropertySearchQuery))
+            {
+                EditorGUILayout.LabelField("No properties match your search.");
+            }
+        }
+        else
+        {
+             EditorGUILayout.LabelField("Properties array is null.");
+        }
+        // End ScrollView
+        EditorGUILayout.EndScrollView();
+        // End the box style
+        GUILayout.EndVertical();
+        #endif
+    }
 
     void InitializeFoldState(string name)
     {
@@ -82,13 +167,16 @@ public class SomnaShaderUI : ShaderGUI
         if (!_foldoutState.ContainsKey(name))
         {
             _foldoutState.Add(name, state);
+            EditorUtility.SetDirty(target);
             return state;
         }
         else if (_foldoutState.ContainsKey(name))
         {
             _foldoutState[name] = state;
+            EditorUtility.SetDirty(target);
             return _foldoutState[name];
         } 
+        EditorUtility.SetDirty(target);
         return false;
     }
 
@@ -101,6 +189,7 @@ public class SomnaShaderUI : ShaderGUI
         }
         string serializedStates = JsonUtility.ToJson(data);
         material.SetOverrideTag("_FoldoutStates", serializedStates);
+        EditorUtility.SetDirty(material);
     }
 
     void LoadFoldStates(Material material)
@@ -129,8 +218,20 @@ public class SomnaShaderUI : ShaderGUI
         }
     }
 
-    public SomnaShaderUI() : base()
-    { 
+    GUIStyle styleCheck(bool enable)
+    {
+        if (selected == null)
+        {
+            IniitalizeStyle();
+        }
+        if (enable)
+            return selected;
+        else
+            return EditorStyles.foldoutHeader;
+    } 
+
+    void IniitalizeStyle()
+    {
         selected = new GUIStyle(EditorStyles.foldoutHeader);
         selected.normal.textColor = Color.green; // Change to desired color
         selected.onNormal.textColor = Color.green;
@@ -142,6 +243,15 @@ public class SomnaShaderUI : ShaderGUI
         selected.onActive.textColor = Color.green;
         label = new GUIStyle(EditorStyles.miniLabel);
         label.alignment = TextAnchor.MiddleCenter;
+    }
+
+    private bool runOnce = false;
+    void Setup()
+    {
+        if (runOnce) return;
+        runOnce = true;
+
+        IniitalizeStyle();
         InitializeFoldState("showMain");
         InitializeFoldState("showMaskMaps");
         InitializeFoldState("showEffects");
@@ -149,39 +259,21 @@ public class SomnaShaderUI : ShaderGUI
         InitializeFoldState("showEmission");
         InitializeFoldState("showTileDiscard");
         InitializeFoldState("showRenderSettings");
-    }
-
-    GUIStyle styleCheck(bool enable)
-    {
-        if (enable)
-            return selected;
-        else
-            return EditorStyles.foldoutHeader;
-    }
-
-    void Setup()
-    {
-        if (props.Count != properties.Length)
-        {
-            props.Clear();
-            for (int i = 0; i < properties.Length; i++)
-            {
-                if (properties[i] == null || props.ContainsKey(properties[i].name))
-                    continue;
-                props.Add(properties[i].name, properties[i]);
-            }
-        }
         LoadFoldStates(target);
     }
 
     void UpdateProps(MaterialProperty[] propertiesLocal)
     {
+        if (props == null)
+            return;
         for (int i = 0; i < propertiesLocal.Length; i++)
         {
-            if (props.ContainsKey(props[properties[i].name].name))
+            if (propertiesLocal[i] == null)
+                continue;
+            if (props.ContainsKey(props[propertiesLocal[i].name].name))
             {
                 #if DEBUG
-                Debug.Log($"Furality Shader GUI: {properties[i].name} {props[properties[i].name].name}");
+                Debug.Log($"Furality Shader GUI: {propertiesLocal[i].name} {props[propertiesLocal[i].name].name}");
                 #endif
                 props[propertiesLocal[i].name] = propertiesLocal[i];
             }
@@ -232,6 +324,8 @@ public class SomnaShaderUI : ShaderGUI
         GUILayout.Space(10);
         editor.ShaderProperty(FindProperty(workflow), "Workflow");
 
+        FixMaskClip();
+
         if ((BlendMode)target.GetFloat("_BlendModeIndex") == BlendMode.Transparent)
         {
             GUILayout.Space(10);
@@ -263,20 +357,18 @@ public class SomnaShaderUI : ShaderGUI
 
         RenderSettings();
         #if FURALITY_SHADER_UI_DEBUG
-        if (GUILayout.Button("Update Shader Properties"))
-        {
-            UpdateProps(properties);
-        }
+        // Not using props anymore ;/
+        // if (GUILayout.Button("Update Shader Properties"))
+        // {
+        //     UpdateProps(properties);
+        // }
         #endif
 
         if (GUI.changed)
         {
             SaveFoldStates(target);
         }
-        if (EditorGUI.EndChangeCheck())
-        {
-            SaveFoldStates(target);
-        }
+        DebugState();
     }
 
     //Entirely functions below this point
@@ -302,10 +394,15 @@ public class SomnaShaderUI : ShaderGUI
     //Modify FindProperty to only require a string
     MaterialProperty FindProperty(string name)
     {
-        if (props.ContainsKey(name))
-            return props[name];
-        return null;
-        // return FindProperty(name, properties);
+        // if (props.ContainsKey(name))
+        // {
+        //     return props[name];
+        // }
+        // else
+        // {
+            return FindProperty(name, properties);
+        // }
+        // return null;
     }
 
     //Function to create labels for properties
@@ -624,6 +721,7 @@ public class SomnaShaderUI : ShaderGUI
                         editor.TexturePropertySingleLine(MakeLabel("SpriteSheet"), FindProperty("_Constellation"), FindProperty("_ConstellationColor"));
                         editor.TextureScaleOffsetProperty(FindProperty("_Constellation"));
                         //editor.ShaderProperty(FindProperty("_SheetSize"), "Sheet Size (square)");
+                        sheetSize = target.GetInteger("_SheetSize");
                         if (sheetSize < 1)
                         {
                             sheetSize = 1;
@@ -2496,21 +2594,31 @@ public class SomnaShaderUI : ShaderGUI
 
     }
 
+    void FixMaskClip()
+    {
+        #if SOMNA_SHADER_UI_DEBUG
+        Debug.Log($"Furality Shader GUI FixMaskClip: mode {mode}");
+        #endif
+        if (mode == BlendMode.Opaque)
+        {
+            #if SOMNA_SHADER_UI_DEBUG
+            Debug.Log($"Furality Shader GUI: fixing mask clip");
+            #endif
+            target.SetFloat("_MaskClipValue", 1f);
+        }
+    }
+
     void DoMaskClip()
     {
         MaterialProperty clip = FindProperty("_MaskClipValue");
-        BlendMode mode = (BlendMode)target.GetFloat("_BlendModeIndex");
-        if (mode == BlendMode.Opaque)
-        {
-            target.SetFloat("_MaskClipValue", 1f);
-        }
 
         editor.ShaderProperty(clip, MakeLabel("Mask Clip"));
     }
 
+    BlendMode mode = BlendMode.Opaque;
     void DoBlendMode()
     {
-        BlendMode mode = (BlendMode)target.GetFloat("_BlendModeIndex");
+        mode = (BlendMode)target.GetFloat("_BlendModeIndex");
 
         EditorGUI.BeginChangeCheck();
         mode = (BlendMode)EditorGUILayout.EnumPopup(new GUIContent("Rendering Mode"), mode);
