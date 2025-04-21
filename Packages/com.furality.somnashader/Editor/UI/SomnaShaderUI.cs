@@ -70,7 +70,9 @@ public class SomnaShaderUI : ShaderGUI
         {
             EditorGUILayout.LabelField("Foldout States array is null. That's not good.");
         }
-        
+
+        EditorGUILayout.LabelField($"Rendering Mode: {(BlendMode)target.GetFloat("_BlendModeIndex")}", EditorStyles.boldLabel); 
+
         GUILayout.EndVertical();
         GUILayout.Space(10);
         GUILayout.BeginVertical("box");
@@ -151,9 +153,6 @@ public class SomnaShaderUI : ShaderGUI
     {
         if (_foldoutState.ContainsKey(name))
         {
-            #if FURALITY_SHADER_UI_DEBUG
-            Debug.Log($"Furality Shader GUI foldState: {name} {_foldoutState[name]}");
-            #endif
             return _foldoutState[name];
         }
         #if FURALITY_SHADER_UI_DEBUG
@@ -257,8 +256,17 @@ public class SomnaShaderUI : ShaderGUI
         InitializeFoldState("showEffects");
         InitializeFoldState("showLighting");
         InitializeFoldState("showEmission");
+        InitializeFoldState("showEmission1");
+        InitializeFoldState("showEmission2");
+        InitializeFoldState("showEmission3");
+        InitializeFoldState("showEmission4");
         InitializeFoldState("showTileDiscard");
         InitializeFoldState("showRenderSettings");
+        InitializeFoldState("showStarshell");
+        InitializeFoldState("showConstellation");
+        InitializeFoldState("showDreamweave");
+        InitializeFoldState("showRainbow");
+        InitializeFoldState("showOutline");
         LoadFoldStates(target);
     }
 
@@ -330,8 +338,6 @@ public class SomnaShaderUI : ShaderGUI
         {
             GUILayout.Space(10);
             DoBlendOPSelctor();
-            //GUILayout.Space(10);
-            //DoMaskClip();
         }
 
         if ((BlendMode)target.GetFloat("_BlendModeIndex") == BlendMode.Cutout)
@@ -443,12 +449,11 @@ public class SomnaShaderUI : ShaderGUI
         EditorGUI.EndChangeCheck(); 
     }
 
-    private static bool showRainbow = false;
     void Rainbow()
     {
-        showRainbow = EditorGUILayout.Foldout(showRainbow, "Rainbow", true, styleCheck(target.GetFloat("_RainbowEnable") == 1));
+        SetFoldState("showRainbow", EditorGUILayout.Foldout(GetFoldState("showRainbow"), "Rainbow", true, styleCheck(target.GetFloat("_RainbowEnable") == 1)));
 
-        if (showRainbow)
+        if (GetFoldState("showRainbow"))
         {
             EditorGUI.indentLevel += 1;
 
@@ -531,12 +536,11 @@ public class SomnaShaderUI : ShaderGUI
     }
 
 
-    private static bool showDreamweave = false;
     void Dreamweave()
     {
-        showDreamweave = EditorGUILayout.Foldout(showDreamweave, "Dreamweave", true, styleCheck(target.GetFloat("_DreamweaveEnable") == 1));
+        SetFoldState("showDreamweave", EditorGUILayout.Foldout(GetFoldState("showDreamweave"), "Dreamweave", true, styleCheck(target.GetFloat("_DreamweaveEnable") == 1)));
 
-        if (showDreamweave)
+        if (GetFoldState("showDreamweave"))
         {
             EditorGUI.indentLevel += 1;
 
@@ -650,14 +654,12 @@ public class SomnaShaderUI : ShaderGUI
         }
     }
 
-    private static bool showStarshell = false;
-    private static bool showConstellation = false;
-    private int sheetSize = 1;
+    private float sheetSize = 1;
     void Starshell()
     {
-        showStarshell = EditorGUILayout.Foldout(showStarshell, "Stardust", true, styleCheck(target.GetFloat("_StarshellEnable") == 1));
+        SetFoldState("showStarshell", EditorGUILayout.Foldout(GetFoldState("showStarshell"), "Stardust", true, styleCheck(target.GetFloat("_StarshellEnable") == 1)));
 
-        if (showStarshell)
+        if (GetFoldState("showStarshell"))
         {
             EditorGUI.indentLevel += 1;
 
@@ -704,9 +706,9 @@ public class SomnaShaderUI : ShaderGUI
                 editor.ShaderProperty(FindProperty("_StardustHeightMap"), "Heightmap");
                 editor.ShaderProperty(FindProperty("_StardustHeightCh"), "Heightmap Channel");
 
-                showConstellation = EditorGUILayout.Foldout(showConstellation, "Constellation", true, styleCheck(target.GetFloat("_ConstellationEnable") == 1));
+                SetFoldState("showConstellation", EditorGUILayout.Foldout(GetFoldState("showConstellation"), "Constellation", true, styleCheck(target.GetFloat("_ConstellationEnable") == 1)));
 
-                if (showConstellation)
+                if (GetFoldState("showConstellation"))
                 {
                     EditorGUI.indentLevel += 1;
 
@@ -721,13 +723,13 @@ public class SomnaShaderUI : ShaderGUI
                         editor.TexturePropertySingleLine(MakeLabel("SpriteSheet"), FindProperty("_Constellation"), FindProperty("_ConstellationColor"));
                         editor.TextureScaleOffsetProperty(FindProperty("_Constellation"));
                         //editor.ShaderProperty(FindProperty("_SheetSize"), "Sheet Size (square)");
-                        sheetSize = target.GetInteger("_SheetSize");
+                        sheetSize = target.GetFloat("_SheetSize");
                         if (sheetSize < 1)
                         {
                             sheetSize = 1;
                         }
-                        sheetSize = EditorGUILayout.IntField("Sheet Size (square)", sheetSize);
-                        target.SetInteger("_SheetSize", sheetSize);
+                        sheetSize = EditorGUILayout.IntField("Sheet Size (square)", (int)sheetSize);
+                        target.SetFloat("_SheetSize", sheetSize);
                         editor.ShaderProperty(FindProperty("_ConstellationAmount"), "Amount");
                         editor.ShaderProperty(FindProperty("_ConstellationSpeed"), "Speed");
                         editor.ShaderProperty(FindProperty("_FadeFreqency"), "Fade Freqency");
@@ -761,12 +763,11 @@ public class SomnaShaderUI : ShaderGUI
         }
     }
 
-    private static bool showOutline = false;
     void Outline()
     {
-        showOutline = EditorGUILayout.Foldout(showOutline, "Outline", true, styleCheck(target.GetFloat("_Outline1Enable") == 1));
+        SetFoldState("showOutline", EditorGUILayout.Foldout(GetFoldState("showOutline"), "Outline", true, styleCheck(target.GetFloat("_Outline1Enable") == 1)));
 
-        if (showOutline)
+        if (GetFoldState("showOutline"))
         {
             EditorGUI.indentLevel += 1;
 
@@ -951,10 +952,6 @@ public class SomnaShaderUI : ShaderGUI
 
     //Create foldout that contains Emission properties
     private static bool showEmission = false;
-    private static bool showEmission1 = false;
-    private static bool showEmission2 = false;
-    private static bool showEmission3 = false;
-    private static bool showEmission4 = false;
     void DoGlobalEmission()
     {
         EditorGUI.BeginChangeCheck();
@@ -975,7 +972,7 @@ public class SomnaShaderUI : ShaderGUI
                 "_GlowMask0Channel",
                 DoRedChGlow,
                 DoRedChAL,
-                ref showEmission1
+                "showEmission1"
             );
             DoEmissionGeneric(
                 "Emission 02",
@@ -986,7 +983,7 @@ public class SomnaShaderUI : ShaderGUI
                 "_GlowMask1Channel",
                 DoGreenChGlow,
                 DoGreenChAL,
-                ref showEmission2
+                "showEmission2"
             );
             DoEmissionGeneric(
                 "Emission 03",
@@ -997,7 +994,7 @@ public class SomnaShaderUI : ShaderGUI
                 "_GlowMask2Channel",
                 DoBlueChGlow,
                 DoBlueChAL,
-                ref showEmission3
+                "showEmission3"
             );
             DoEmissionGeneric(
                 "Emission 04",
@@ -1008,7 +1005,7 @@ public class SomnaShaderUI : ShaderGUI
                 "_GlowMask3Channel",
                 DoAlphaChGlow,
                 DoAlphaChAL,
-                ref showEmission4
+                "showEmission4"
             );
 
             EditorGUI.indentLevel -= 1;
@@ -1025,11 +1022,11 @@ public class SomnaShaderUI : ShaderGUI
         string glowmaskChannelProp,
         Action channelGlow,
         Action audioLink,
-        ref bool foldoutState
+        string foldoutState
     )
     {
-        foldoutState = EditorGUILayout.Foldout(foldoutState, title, true, styleCheck(target.GetFloat(fallbackProp) == 1));
-        if (foldoutState)
+        SetFoldState(foldoutState, EditorGUILayout.Foldout(GetFoldState(foldoutState), title, true, styleCheck(target.GetFloat(fallbackProp) == 1)));
+        if (GetFoldState(foldoutState))
         {
             GUILayout.BeginVertical("box");
             editor.ShaderProperty(FindProperty(fallbackProp), "Enable", 2);
@@ -2594,25 +2591,39 @@ public class SomnaShaderUI : ShaderGUI
 
     }
 
+    private float maskClipValue = 0.5f;
     void FixMaskClip()
     {
-        #if SOMNA_SHADER_UI_DEBUG
-        Debug.Log($"Furality Shader GUI FixMaskClip: mode {mode}");
-        #endif
-        if (mode == BlendMode.Opaque)
+        EditorGUI.BeginChangeCheck();
+        if (EditorGUI.EndChangeCheck())
         {
-            #if SOMNA_SHADER_UI_DEBUG
-            Debug.Log($"Furality Shader GUI: fixing mask clip");
-            #endif
-            target.SetFloat("_MaskClipValue", 1f);
+            if (mode == BlendMode.Opaque || mode == BlendMode.Transparent)
+            {
+                target.SetFloat("_MaskClipValue", 1.0f);
+            }
         }
     }
 
     void DoMaskClip()
     {
-        MaterialProperty clip = FindProperty("_MaskClipValue");
-
-        editor.ShaderProperty(clip, MakeLabel("Mask Clip"));
+        if (maskClipValue < 0)
+        {
+            maskClipValue = 0;
+        }
+        if (maskClipValue > 1.1f)
+        {
+            maskClipValue = 1.1f;
+        }
+        EditorGUI.BeginChangeCheck();
+        maskClipValue = EditorGUILayout.FloatField("Mask Clip", maskClipValue);
+        if (mode == BlendMode.Opaque)
+        {
+            maskClipValue = 1.0f;
+        }
+        if (EditorGUI.EndChangeCheck())
+        {
+            target.SetFloat("_MaskClipValue", maskClipValue);
+        }
     }
 
     BlendMode mode = BlendMode.Opaque;
@@ -2625,9 +2636,6 @@ public class SomnaShaderUI : ShaderGUI
 
         if (EditorGUI.EndChangeCheck())
         {
-            #if FURALITY_SHADER_UI_DEBUG
-            Debug.Log($"Furality Shader GUI: {mode}");
-            #endif
             editor.RegisterPropertyChangeUndo("Blend Mode");
             target.SetFloat("_BlendModeIndex", (float)mode);
 
