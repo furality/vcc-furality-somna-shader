@@ -1247,7 +1247,7 @@ public class SomnaShaderUI : ShaderGUI
         EditorGUILayout.LabelField("", GUILayout.Width(EditorGUIUtility.labelWidth - 18));
 
         Rect xFieldRect = EditorGUILayout.GetControlRect(false,20f);
-        offset.x = EditorGUI.FloatField(xFieldRect, offset.y);
+        offset.x = EditorGUI.FloatField(xFieldRect, offset.x);
 
         Rect yFieldRect = EditorGUILayout.GetControlRect(false, 20f);
         offset.y = EditorGUI.FloatField(yFieldRect, offset.y);
@@ -2699,6 +2699,7 @@ public class SomnaShaderUI : ShaderGUI
         if (showRenderSettings)
         {
             EditorGUI.indentLevel++;
+            editor.ShaderProperty(FindProperty("_addPassIntensity"), "Add Pass Intensity");
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Render Queue Offset:");
             EditorGUILayout.BeginVertical();
