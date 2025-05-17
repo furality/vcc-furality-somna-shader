@@ -906,30 +906,6 @@ Shader "Furality/Somna Shader"
 				return 1;
 			}
 			
-			float3 sampleReflectionProbe1050( float3 uvw )
-			{
-				half4 skyData = UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, uvw, 5); //('cubemap', 'sample coordinate', 'map-map level')
-				         half3 skyColor = DecodeHDR (skyData, unity_SpecCube0_HDR);
-				         return half4(skyColor, 1.0);
-			}
-			
-			inline int IsLumaActive11_g12827( int Band )
-			{
-				return AudioLinkData( ALPASS_AUDIOLINK + uint2( 0, Band ) ).r;
-			}
-			
-			float IfAudioLinkv2Exists1_g12828(  )
-			{
-				int w = 0; 
-				int h; 
-				int res = 0;
-				#ifndef SHADER_TARGET_SURFACE_ANALYSIS
-				_AudioTexture.GetDimensions(w, h); 
-				#endif
-				if (w == 128) res = 1;
-				return res;
-			}
-			
 			float3 LightColorZero(  )
 			{
 				return unity_LightColor[0];
@@ -2263,48 +2239,12 @@ Shader "Furality/Somna Shader"
 				#endif
 				float3 temp_cast_23 = (0.01).xxx;
 				float3 IndDiffuse577 = ( max( staticSwitch2035 , temp_cast_23 ) * Occlusion1309 );
-				int localLightExists8_g12826 = LightExists8_g12826();
 				#if defined(LIGHTMAP_ON) && ( UNITY_VERSION < 560 || ( defined(LIGHTMAP_SHADOW_MIXING) && !defined(SHADOWS_SHADOWMASK) && defined(SHADOWS_SCREEN) ) )//aselc
 				float4 ase_lightColor = 0;
 				#else //aselc
 				float4 ase_lightColor = _LightColor0;
 				#endif //aselc
-				float3 break1_g12826 = ase_lightColor.rgb;
-				float smoothstepResult14_g12826 = smoothstep( 0.0 , 0.15 , saturate( max( max( break1_g12826.x , break1_g12826.y ) , break1_g12826.z ) ));
-				#ifdef UNITY_PASS_FORWARDBASE
-				float staticSwitch7_g12826 = smoothstepResult14_g12826;
-				#else
-				float staticSwitch7_g12826 = 1.0;
-				#endif
-				float DetectLight1057 = ( localLightExists8_g12826 * staticSwitch7_g12826 );
-				float3 _Vector222 = float3(1.5,1,0.2);
-				float3 ProbeDir1060 = _Vector222;
-				UnityGIInput data1037;
-				UNITY_INITIALIZE_OUTPUT( UnityGIInput, data1037 );
-				#if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON) //dylm1037
-				data1037.lightmapUV = IN.ase_lmap;
-				#endif //dylm1037
-				#if UNITY_SHOULD_SAMPLE_SH //fsh1037
-				data1037.ambient = IN.ase_sh;
-				#endif //fsh1037
-				UnityGI gi1037 = UnityGI_Base(data1037, 1, ProbeDir1060);
-				float3 temp_output_1038_0 = max( gi1037.indirect.diffuse , float3( 0,0,0 ) );
-				float3 normalizeResult2038 = ASESafeNormalize( float3(-1.5,1,0) );
-				#if defined( _LIGHTINGSTYLE_STANDARD )
-				float3 staticSwitch2036 = WorldNorm601;
-				#elif defined( _LIGHTINGSTYLE_TOON )
-				float3 staticSwitch2036 = normalizeResult2038;
-				#else
-				float3 staticSwitch2036 = WorldNorm601;
-				#endif
-				float3 uvw1050 = staticSwitch2036;
-				float3 localsampleReflectionProbe1050 = sampleReflectionProbe1050( uvw1050 );
-				float3 lerpResult1055 = lerp( temp_output_1038_0 , localsampleReflectionProbe1050 , 0.5);
-				int Band11_g12827 = 56;
-				int localIsLumaActive11_g12827 = IsLumaActive11_g12827( Band11_g12827 );
-				float localIfAudioLinkv2Exists1_g12828 = IfAudioLinkv2Exists1_g12828();
-				float3 lerpResult1041 = lerp( temp_output_1038_0 , lerpResult1055 , min( (float)localIsLumaActive11_g12827 , localIfAudioLinkv2Exists1_g12828 ));
-				float3 LightColBase1046 = ( DetectLight1057 < 0.9 ? lerpResult1041 : ase_lightColor.rgb );
+				float3 LightColBase1046 = ase_lightColor.rgb;
 				float rawAttenuation3135 = (float4(atten,0,0,0)).x;
 				float smoothstepResult1087 = smoothstep( 0.15 , 0.151 , rawAttenuation3135);
 				#if defined( _LIGHTINGSTYLE_STANDARD )
@@ -2315,6 +2255,15 @@ Shader "Furality/Somna Shader"
 				float staticSwitch2026 = rawAttenuation3135;
 				#endif
 				float3 PixelLightsBase571 = ( LightColBase1046 * staticSwitch2026 );
+				int localLightExists8_g12826 = LightExists8_g12826();
+				float3 break1_g12826 = ase_lightColor.rgb;
+				float smoothstepResult14_g12826 = smoothstep( 0.0 , 0.15 , saturate( max( max( break1_g12826.x , break1_g12826.y ) , break1_g12826.z ) ));
+				#ifdef UNITY_PASS_FORWARDBASE
+				float staticSwitch7_g12826 = smoothstepResult14_g12826;
+				#else
+				float staticSwitch7_g12826 = 1.0;
+				#endif
+				float DetectLight1057 = ( localLightExists8_g12826 * staticSwitch7_g12826 );
 				float3 normalizeResult1170 = normalize( float3(-0.05,1,0) );
 				float3 rotatedValue1169 = RotateAroundAxis( float3( 0,0,0 ), worldNormal600, normalizeResult1170, radians( 65.0 ) );
 				#if defined( _LIGHTINGSTYLE_STANDARD )
@@ -2325,6 +2274,7 @@ Shader "Furality/Somna Shader"
 				float3 staticSwitch2068 = worldNormal600;
 				#endif
 				float3 WorldNormToon2194 = staticSwitch2068;
+				float3 _Vector222 = float3(1.5,1,0.2);
 				#if defined( _LIGHTINGSTYLE_STANDARD )
 				float3 staticSwitch2039 = _Vector222;
 				#elif defined( _LIGHTINGSTYLE_TOON )
@@ -2445,38 +2395,38 @@ Shader "Furality/Somna Shader"
 				#endif
 				float SpecularMaskChannel473_g12820 = _SpecularMaskChannel;
 				float SpecularMaskMap472_g12820 = _SpecularMask;
-				float4 temp_cast_28 = (1.0).xxxx;
-				float4 SpecularMaskRGBA474_g12820 = ( 4.0 == SpecularMaskMap472_g12820 ? temp_cast_28 : ( 3.0 == SpecularMaskMap472_g12820 ? MM04RGBA8_g12820 : ( 2.0 == SpecularMaskMap472_g12820 ? MM03RGBA7_g12820 : ( 1.0 == SpecularMaskMap472_g12820 ? MM02RGBA6_g12820 : MM01RGBA5_g12820 ) ) ) );
+				float4 temp_cast_27 = (1.0).xxxx;
+				float4 SpecularMaskRGBA474_g12820 = ( 4.0 == SpecularMaskMap472_g12820 ? temp_cast_27 : ( 3.0 == SpecularMaskMap472_g12820 ? MM04RGBA8_g12820 : ( 2.0 == SpecularMaskMap472_g12820 ? MM03RGBA7_g12820 : ( 1.0 == SpecularMaskMap472_g12820 ? MM02RGBA6_g12820 : MM01RGBA5_g12820 ) ) ) );
 				float SpecularMask1441 = ( 3.0 == SpecularMaskChannel473_g12820 ? (SpecularMaskRGBA474_g12820).a : ( 2.0 == SpecularMaskChannel473_g12820 ? (SpecularMaskRGBA474_g12820).b : ( 1.0 == SpecularMaskChannel473_g12820 ? (SpecularMaskRGBA474_g12820).g : (SpecularMaskRGBA474_g12820).r ) ) );
 				float3 SpecularBase645 = ( staticSwitch2044 * SpecularMask1441 );
 				float3 FallbackColor289_g12987 = _RedChGlowFallback.rgb;
 				float GlowMask0Channel160_g12820 = _GlowMask0Channel;
 				float GlowMask0Map157_g12820 = _GlowMask0;
-				float4 temp_cast_30 = (1.0).xxxx;
-				float4 GlowMask0RGBA166_g12820 = ( 4.0 == GlowMask0Map157_g12820 ? temp_cast_30 : ( 3.0 == GlowMask0Map157_g12820 ? MM04RGBA8_g12820 : ( 2.0 == GlowMask0Map157_g12820 ? MM03RGBA7_g12820 : ( 1.0 == GlowMask0Map157_g12820 ? MM02RGBA6_g12820 : MM01RGBA5_g12820 ) ) ) );
+				float4 temp_cast_29 = (1.0).xxxx;
+				float4 GlowMask0RGBA166_g12820 = ( 4.0 == GlowMask0Map157_g12820 ? temp_cast_29 : ( 3.0 == GlowMask0Map157_g12820 ? MM04RGBA8_g12820 : ( 2.0 == GlowMask0Map157_g12820 ? MM03RGBA7_g12820 : ( 1.0 == GlowMask0Map157_g12820 ? MM02RGBA6_g12820 : MM01RGBA5_g12820 ) ) ) );
 				float GlowMask0169_g12820 = ( 3.0 == GlowMask0Channel160_g12820 ? (GlowMask0RGBA166_g12820).a : ( 2.0 == GlowMask0Channel160_g12820 ? (GlowMask0RGBA166_g12820).b : ( 1.0 == GlowMask0Channel160_g12820 ? (GlowMask0RGBA166_g12820).g : (GlowMask0RGBA166_g12820).r ) ) );
 				float GlowMask1Channel200_g12820 = _GlowMask1Channel;
 				float GlowMask1Map198_g12820 = _GlowMask1;
-				float4 temp_cast_31 = (1.0).xxxx;
-				float4 GlowMask1RGBA197_g12820 = ( 4.0 == GlowMask1Map198_g12820 ? temp_cast_31 : ( 3.0 == GlowMask1Map198_g12820 ? MM04RGBA8_g12820 : ( 2.0 == GlowMask1Map198_g12820 ? MM03RGBA7_g12820 : ( 1.0 == GlowMask1Map198_g12820 ? MM02RGBA6_g12820 : MM01RGBA5_g12820 ) ) ) );
+				float4 temp_cast_30 = (1.0).xxxx;
+				float4 GlowMask1RGBA197_g12820 = ( 4.0 == GlowMask1Map198_g12820 ? temp_cast_30 : ( 3.0 == GlowMask1Map198_g12820 ? MM04RGBA8_g12820 : ( 2.0 == GlowMask1Map198_g12820 ? MM03RGBA7_g12820 : ( 1.0 == GlowMask1Map198_g12820 ? MM02RGBA6_g12820 : MM01RGBA5_g12820 ) ) ) );
 				float GlowMask1199_g12820 = ( 3.0 == GlowMask1Channel200_g12820 ? (GlowMask1RGBA197_g12820).a : ( 2.0 == GlowMask1Channel200_g12820 ? (GlowMask1RGBA197_g12820).b : ( 1.0 == GlowMask1Channel200_g12820 ? (GlowMask1RGBA197_g12820).g : (GlowMask1RGBA197_g12820).r ) ) );
 				float GlowMask2Channel226_g12820 = _GlowMask2Channel;
 				float GlowMask2Map225_g12820 = _GlowMask2;
-				float4 temp_cast_32 = (1.0).xxxx;
-				float4 GlowMask2RGBA227_g12820 = ( 4.0 == GlowMask2Map225_g12820 ? temp_cast_32 : ( 3.0 == GlowMask2Map225_g12820 ? MM04RGBA8_g12820 : ( 2.0 == GlowMask2Map225_g12820 ? MM03RGBA7_g12820 : ( 1.0 == GlowMask2Map225_g12820 ? MM02RGBA6_g12820 : MM01RGBA5_g12820 ) ) ) );
+				float4 temp_cast_31 = (1.0).xxxx;
+				float4 GlowMask2RGBA227_g12820 = ( 4.0 == GlowMask2Map225_g12820 ? temp_cast_31 : ( 3.0 == GlowMask2Map225_g12820 ? MM04RGBA8_g12820 : ( 2.0 == GlowMask2Map225_g12820 ? MM03RGBA7_g12820 : ( 1.0 == GlowMask2Map225_g12820 ? MM02RGBA6_g12820 : MM01RGBA5_g12820 ) ) ) );
 				float GlowMask2228_g12820 = ( 3.0 == GlowMask2Channel226_g12820 ? (GlowMask2RGBA227_g12820).a : ( 2.0 == GlowMask2Channel226_g12820 ? (GlowMask2RGBA227_g12820).b : ( 1.0 == GlowMask2Channel226_g12820 ? (GlowMask2RGBA227_g12820).g : (GlowMask2RGBA227_g12820).r ) ) );
 				float GlowMask3Channel263_g12820 = _GlowMask3Channel;
 				float GlowMask3Map262_g12820 = _GlowMask3;
-				float4 temp_cast_33 = (1.0).xxxx;
-				float4 GlowMask3RGBA264_g12820 = ( 4.0 == GlowMask3Map262_g12820 ? temp_cast_33 : ( 3.0 == GlowMask3Map262_g12820 ? MM04RGBA8_g12820 : ( 2.0 == GlowMask3Map262_g12820 ? MM03RGBA7_g12820 : ( 1.0 == GlowMask3Map262_g12820 ? MM02RGBA6_g12820 : MM01RGBA5_g12820 ) ) ) );
+				float4 temp_cast_32 = (1.0).xxxx;
+				float4 GlowMask3RGBA264_g12820 = ( 4.0 == GlowMask3Map262_g12820 ? temp_cast_32 : ( 3.0 == GlowMask3Map262_g12820 ? MM04RGBA8_g12820 : ( 2.0 == GlowMask3Map262_g12820 ? MM03RGBA7_g12820 : ( 1.0 == GlowMask3Map262_g12820 ? MM02RGBA6_g12820 : MM01RGBA5_g12820 ) ) ) );
 				float GlowMask3265_g12820 = ( 3.0 == GlowMask3Channel263_g12820 ? (GlowMask3RGBA264_g12820).a : ( 2.0 == GlowMask3Channel263_g12820 ? (GlowMask3RGBA264_g12820).b : ( 1.0 == GlowMask3Channel263_g12820 ? (GlowMask3RGBA264_g12820).g : (GlowMask3RGBA264_g12820).r ) ) );
 				float4 appendResult266_g12820 = (float4(GlowMask0169_g12820 , GlowMask1199_g12820 , GlowMask2228_g12820 , GlowMask3265_g12820));
 				float4 GlowMaskRGBA1295 = appendResult266_g12820;
 				float4 GlowMaskRGBA174_g12985 = GlowMaskRGBA1295;
 				float temp_output_236_0_g12987 = (GlowMaskRGBA174_g12985).x;
 				float3 temp_output_291_0_g12987 = ( FallbackColor289_g12987 * _UseFallback0 * temp_output_236_0_g12987 );
-				float4 temp_cast_36 = (1.0).xxxx;
-				float3 temp_cast_38 = (1.0).xxx;
+				float4 temp_cast_35 = (1.0).xxxx;
+				float3 temp_cast_37 = (1.0).xxx;
 				int EmissionGlowZone47_g12987 = _RedChGlowZone;
 				int clampResult8_g12993 = clamp( EmissionGlowZone47_g12987 , 1 , 4 );
 				int temp_output_3_0_g12993 = ( clampResult8_g12993 - 1 );
@@ -2491,8 +2441,8 @@ Shader "Furality/Somna Shader"
 				float3 localLumaGlowData2_g12993 = LumaGlowData2_g12993( Band2_g12993 , Delay2_g12993 );
 				float3 lerpResult17_g12993 = lerp( ( localgetThemeData16_g12993 * localLumaGlowData2_g12993 ) , localLumaGlowData2_g12993 , (float)temp_output_14_0_g12993);
 				int temp_output_21_0_g12987 = saturate( EmissionGlowZone47_g12987 );
-				float3 lerpResult20_g12987 = lerp( temp_cast_38 , lerpResult17_g12993 , (float)temp_output_21_0_g12987);
-				float3 temp_cast_42 = (1.0).xxx;
+				float3 lerpResult20_g12987 = lerp( temp_cast_37 , lerpResult17_g12993 , (float)temp_output_21_0_g12987);
+				float3 temp_cast_41 = (1.0).xxx;
 				int clampResult8_g12995 = clamp( EmissionGlowZone47_g12987 , 1 , 4 );
 				int temp_output_3_0_g12995 = ( clampResult8_g12995 - 1 );
 				int Zone15_g12995 = temp_output_3_0_g12995;
@@ -2535,9 +2485,9 @@ Shader "Furality/Somna Shader"
 				float Delay11_g12995 = EmissionGlowDelay56_g12987;
 				float3 localLumaGlowLerp11_g12995 = LumaGlowLerp11_g12995( Band11_g12995 , Delay11_g12995 );
 				float3 lerpResult17_g12995 = lerp( ( localgetThemeData15_g12995 * localLumaGlowLerp11_g12995 ) , localLumaGlowLerp11_g12995 , (float)temp_output_13_0_g12995);
-				float3 lerpResult22_g12987 = lerp( temp_cast_42 , lerpResult17_g12995 , (float)temp_output_21_0_g12987);
+				float3 lerpResult22_g12987 = lerp( temp_cast_41 , lerpResult17_g12995 , (float)temp_output_21_0_g12987);
 				float3 lerpResult23_g12987 = lerp( lerpResult20_g12987 , lerpResult22_g12987 , (float)saturate( EmissionGlowMode35_g12987 ));
-				float4 temp_cast_52 = (1.0).xxxx;
+				float4 temp_cast_51 = (1.0).xxxx;
 				float temp_output_10_0_g13001 = EmissionGlowDelay56_g12987;
 				float Position1_g13003 = ( temp_output_10_0_g13001 / 127.0 );
 				float4 localAudioLinkLerp1_g13003 = AudioLinkLerp1_g13003( Position1_g13003 );
@@ -2548,15 +2498,15 @@ Shader "Furality/Somna Shader"
 				int Band11_g13002 = 56;
 				int localIsLumaActive11_g13002 = IsLumaActive11_g13002( Band11_g13002 );
 				float4 lerpResult14_g13001 = lerp( localAudioLinkLerp1_g13003 , float4( localLumaGlowLerp11_g13001 , 0.0 ) , (float)localIsLumaActive11_g13002);
-				float4 lerpResult52_g12987 = lerp( temp_cast_52 , lerpResult14_g13001 , (float)saturate( EmissionGlowZone47_g12987 ));
+				float4 lerpResult52_g12987 = lerp( temp_cast_51 , lerpResult14_g13001 , (float)saturate( EmissionGlowZone47_g12987 ));
 				float4 lerpResult51_g12987 = lerp( float4( lerpResult23_g12987 , 0.0 ) , lerpResult52_g12987 , (float)saturate( ( EmissionGlowZone47_g12987 - 4 ) ));
-				float4 temp_cast_57 = (_RedChGlowMinBrightness).xxxx;
-				float4 temp_cast_58 = (( _RedChGlowMinBrightness + 1.0 )).xxxx;
+				float4 temp_cast_56 = (_RedChGlowMinBrightness).xxxx;
+				float4 temp_cast_57 = (( _RedChGlowMinBrightness + 1.0 )).xxxx;
 				int temp_output_254_0_g12987 = saturate( EmissionGlowZone47_g12987 );
 				float localIfAudioLinkv2Exists1_g13000 = IfAudioLinkv2Exists1_g13000();
-				float4 lerpResult284_g12987 = lerp( float4( _RedChGlowFallback.rgb , 0.0 ) , ( (temp_cast_57 + (lerpResult51_g12987 - float4( 0,0,0,0 )) * (temp_cast_58 - temp_cast_57) / (float4( 1,1,1,1 ) - float4( 0,0,0,0 ))) * float4( _RedChGlowTint.rgb , 0.0 ) * temp_output_254_0_g12987 ) , localIfAudioLinkv2Exists1_g13000);
+				float4 lerpResult284_g12987 = lerp( float4( _RedChGlowFallback.rgb , 0.0 ) , ( (temp_cast_56 + (lerpResult51_g12987 - float4( 0,0,0,0 )) * (temp_cast_57 - temp_cast_56) / (float4( 1,1,1,1 ) - float4( 0,0,0,0 ))) * float4( _RedChGlowTint.rgb , 0.0 ) * temp_output_254_0_g12987 ) , localIfAudioLinkv2Exists1_g13000);
 				float4 EmissionGlow142_g12987 = lerpResult284_g12987;
-				float4 lerpResult257_g12987 = lerp( temp_cast_36 , EmissionGlow142_g12987 , (float)temp_output_254_0_g12987);
+				float4 lerpResult257_g12987 = lerp( temp_cast_35 , EmissionGlow142_g12987 , (float)temp_output_254_0_g12987);
 				float4 EmissionGlowTog258_g12987 = lerpResult257_g12987;
 				int EmissionReactiveBand243_g12987 = _RedChReactiveBand;
 				int Band3_g12988 = EmissionReactiveBand243_g12987;
@@ -2597,8 +2547,8 @@ Shader "Furality/Somna Shader"
 				float lerpResult168_g12987 = lerp( 1.0 , localAudioLinkLerp3_g12992 , (float)temp_output_64_0_g12987);
 				float lerpResult172_g12987 = lerp( lerpResult103_g12987 , lerpResult168_g12987 , (float)saturate( ( EmissionReactiveMode99_g12987 - 4 ) ));
 				float ReactivityAlpha132_g12987 = (_RedChReactiveMinBrightness + (lerpResult172_g12987 - 0.0) * (( _RedChReactiveMinBrightness + 1.0 ) - _RedChReactiveMinBrightness) / (1.0 - 0.0));
-				float3 temp_cast_69 = (1.0).xxx;
-				float3 lerpResult253_g12987 = lerp( temp_cast_69 , _RedChReactiveTint.rgb , (float)step( EmissionReactiveBand243_g12987 , 9 ));
+				float3 temp_cast_68 = (1.0).xxx;
+				float3 lerpResult253_g12987 = lerp( temp_cast_68 , _RedChReactiveTint.rgb , (float)step( EmissionReactiveBand243_g12987 , 9 ));
 				float3 FinalReactivity68_g12987 = ( ReactivityAlpha132_g12987 * lerpResult253_g12987 );
 				float4 lerpResult146_g12987 = lerp( ( EmissionGlowTog258_g12987 * float4( FinalReactivity68_g12987 , 0.0 ) ) , ( EmissionGlow142_g12987 + float4( FinalReactivity68_g12987 , 0.0 ) ) , (float)saturate( _RedChReactiveBlendMode ));
 				float3 ReversedReactivity152_g12987 = ( ( 1.0 - ReactivityAlpha132_g12987 ) * lerpResult253_g12987 );
@@ -2610,8 +2560,8 @@ Shader "Furality/Somna Shader"
 				float4 lerpResult280_g12987 = lerp( float4( temp_output_291_0_g12987 , 0.0 ) , temp_output_213_0_g12987 , _EnableRedChannel);
 				float temp_output_236_0_g13020 = (GlowMaskRGBA174_g12985).y;
 				float3 temp_output_283_0_g13020 = ( _GreenChGlowFallback.rgb * temp_output_236_0_g13020 * _UseFallback1 );
-				float4 temp_cast_79 = (1.0).xxxx;
-				float3 temp_cast_81 = (1.0).xxx;
+				float4 temp_cast_78 = (1.0).xxxx;
+				float3 temp_cast_80 = (1.0).xxx;
 				int EmissionGlowZone47_g13020 = _GreenChGlowZone;
 				int clampResult8_g13026 = clamp( EmissionGlowZone47_g13020 , 1 , 4 );
 				int temp_output_3_0_g13026 = ( clampResult8_g13026 - 1 );
@@ -2626,8 +2576,8 @@ Shader "Furality/Somna Shader"
 				float3 localLumaGlowData2_g13026 = LumaGlowData2_g13026( Band2_g13026 , Delay2_g13026 );
 				float3 lerpResult17_g13026 = lerp( ( localgetThemeData16_g13026 * localLumaGlowData2_g13026 ) , localLumaGlowData2_g13026 , (float)temp_output_14_0_g13026);
 				int temp_output_21_0_g13020 = saturate( EmissionGlowZone47_g13020 );
-				float3 lerpResult20_g13020 = lerp( temp_cast_81 , lerpResult17_g13026 , (float)temp_output_21_0_g13020);
-				float3 temp_cast_85 = (1.0).xxx;
+				float3 lerpResult20_g13020 = lerp( temp_cast_80 , lerpResult17_g13026 , (float)temp_output_21_0_g13020);
+				float3 temp_cast_84 = (1.0).xxx;
 				int clampResult8_g13028 = clamp( EmissionGlowZone47_g13020 , 1 , 4 );
 				int temp_output_3_0_g13028 = ( clampResult8_g13028 - 1 );
 				int Zone15_g13028 = temp_output_3_0_g13028;
@@ -2670,9 +2620,9 @@ Shader "Furality/Somna Shader"
 				float Delay11_g13028 = EmissionGlowDelay56_g13020;
 				float3 localLumaGlowLerp11_g13028 = LumaGlowLerp11_g13028( Band11_g13028 , Delay11_g13028 );
 				float3 lerpResult17_g13028 = lerp( ( localgetThemeData15_g13028 * localLumaGlowLerp11_g13028 ) , localLumaGlowLerp11_g13028 , (float)temp_output_13_0_g13028);
-				float3 lerpResult22_g13020 = lerp( temp_cast_85 , lerpResult17_g13028 , (float)temp_output_21_0_g13020);
+				float3 lerpResult22_g13020 = lerp( temp_cast_84 , lerpResult17_g13028 , (float)temp_output_21_0_g13020);
 				float3 lerpResult23_g13020 = lerp( lerpResult20_g13020 , lerpResult22_g13020 , (float)saturate( EmissionGlowMode35_g13020 ));
-				float4 temp_cast_95 = (1.0).xxxx;
+				float4 temp_cast_94 = (1.0).xxxx;
 				float temp_output_10_0_g13030 = EmissionGlowDelay56_g13020;
 				float Position1_g13032 = ( temp_output_10_0_g13030 / 127.0 );
 				float4 localAudioLinkLerp1_g13032 = AudioLinkLerp1_g13032( Position1_g13032 );
@@ -2683,15 +2633,15 @@ Shader "Furality/Somna Shader"
 				int Band11_g13031 = 56;
 				int localIsLumaActive11_g13031 = IsLumaActive11_g13031( Band11_g13031 );
 				float4 lerpResult14_g13030 = lerp( localAudioLinkLerp1_g13032 , float4( localLumaGlowLerp11_g13030 , 0.0 ) , (float)localIsLumaActive11_g13031);
-				float4 lerpResult52_g13020 = lerp( temp_cast_95 , lerpResult14_g13030 , (float)saturate( EmissionGlowZone47_g13020 ));
+				float4 lerpResult52_g13020 = lerp( temp_cast_94 , lerpResult14_g13030 , (float)saturate( EmissionGlowZone47_g13020 ));
 				float4 lerpResult51_g13020 = lerp( float4( lerpResult23_g13020 , 0.0 ) , lerpResult52_g13020 , (float)saturate( ( EmissionGlowZone47_g13020 - 4 ) ));
-				float4 temp_cast_100 = (_GreenChGlowMinBrightness).xxxx;
-				float4 temp_cast_101 = (( _GreenChGlowMinBrightness + 1.0 )).xxxx;
+				float4 temp_cast_99 = (_GreenChGlowMinBrightness).xxxx;
+				float4 temp_cast_100 = (( _GreenChGlowMinBrightness + 1.0 )).xxxx;
 				int temp_output_255_0_g13020 = saturate( EmissionGlowZone47_g13020 );
 				float localIfAudioLinkv2Exists1_g13036 = IfAudioLinkv2Exists1_g13036();
-				float4 lerpResult280_g13020 = lerp( float4( _GreenChGlowFallback.rgb , 0.0 ) , ( (temp_cast_100 + (lerpResult51_g13020 - float4( 0,0,0,0 )) * (temp_cast_101 - temp_cast_100) / (float4( 1,1,1,1 ) - float4( 0,0,0,0 ))) * float4( _GreenChGlowTint.rgb , 0.0 ) * temp_output_255_0_g13020 ) , localIfAudioLinkv2Exists1_g13036);
+				float4 lerpResult280_g13020 = lerp( float4( _GreenChGlowFallback.rgb , 0.0 ) , ( (temp_cast_99 + (lerpResult51_g13020 - float4( 0,0,0,0 )) * (temp_cast_100 - temp_cast_99) / (float4( 1,1,1,1 ) - float4( 0,0,0,0 ))) * float4( _GreenChGlowTint.rgb , 0.0 ) * temp_output_255_0_g13020 ) , localIfAudioLinkv2Exists1_g13036);
 				float4 EmissionGlow142_g13020 = lerpResult280_g13020;
-				float4 lerpResult258_g13020 = lerp( temp_cast_79 , EmissionGlow142_g13020 , (float)temp_output_255_0_g13020);
+				float4 lerpResult258_g13020 = lerp( temp_cast_78 , EmissionGlow142_g13020 , (float)temp_output_255_0_g13020);
 				float4 EmissionGlowTog259_g13020 = lerpResult258_g13020;
 				int EmissionReactiveBand243_g13020 = _GreenChReactiveBand;
 				int Band3_g13021 = EmissionReactiveBand243_g13020;
@@ -2732,8 +2682,8 @@ Shader "Furality/Somna Shader"
 				float lerpResult168_g13020 = lerp( 1.0 , localAudioLinkLerp3_g13025 , (float)temp_output_64_0_g13020);
 				float lerpResult172_g13020 = lerp( lerpResult103_g13020 , lerpResult168_g13020 , (float)saturate( ( EmissionReactiveMode99_g13020 - 4 ) ));
 				float ReactivityAlpha132_g13020 = (_GreenChReactiveMinBrightness + (lerpResult172_g13020 - 0.0) * (( _GreenChReactiveMinBrightness + 1.0 ) - _GreenChReactiveMinBrightness) / (1.0 - 0.0));
-				float3 temp_cast_112 = (1.0).xxx;
-				float3 lerpResult264_g13020 = lerp( temp_cast_112 , _GreenChReactiveTint.rgb , (float)step( EmissionReactiveBand243_g13020 , 9 ));
+				float3 temp_cast_111 = (1.0).xxx;
+				float3 lerpResult264_g13020 = lerp( temp_cast_111 , _GreenChReactiveTint.rgb , (float)step( EmissionReactiveBand243_g13020 , 9 ));
 				float3 FinalReactivity68_g13020 = ( ReactivityAlpha132_g13020 * lerpResult264_g13020 );
 				float4 lerpResult146_g13020 = lerp( ( EmissionGlowTog259_g13020 * float4( FinalReactivity68_g13020 , 0.0 ) ) , ( EmissionGlow142_g13020 + float4( FinalReactivity68_g13020 , 0.0 ) ) , (float)saturate( _GreenChReactiveBlendMode ));
 				float3 ReversedReactivity152_g13020 = ( ( 1.0 - ReactivityAlpha132_g13020 ) * lerpResult264_g13020 );
@@ -2745,8 +2695,8 @@ Shader "Furality/Somna Shader"
 				float4 lerpResult276_g13020 = lerp( float4( temp_output_283_0_g13020 , 0.0 ) , temp_output_213_0_g13020 , _EnableGreenChannel);
 				float temp_output_236_0_g13037 = (GlowMaskRGBA174_g12985).z;
 				float3 temp_output_286_0_g13037 = ( _BlueChGlowFallback.rgb * temp_output_236_0_g13037 * _UseFallback2 );
-				float4 temp_cast_122 = (1.0).xxxx;
-				float3 temp_cast_124 = (1.0).xxx;
+				float4 temp_cast_121 = (1.0).xxxx;
+				float3 temp_cast_123 = (1.0).xxx;
 				int EmissionGlowZone47_g13037 = _BlueChGlowZone;
 				int clampResult8_g13043 = clamp( EmissionGlowZone47_g13037 , 1 , 4 );
 				int temp_output_3_0_g13043 = ( clampResult8_g13043 - 1 );
@@ -2761,8 +2711,8 @@ Shader "Furality/Somna Shader"
 				float3 localLumaGlowData2_g13043 = LumaGlowData2_g13043( Band2_g13043 , Delay2_g13043 );
 				float3 lerpResult17_g13043 = lerp( ( localgetThemeData16_g13043 * localLumaGlowData2_g13043 ) , localLumaGlowData2_g13043 , (float)temp_output_14_0_g13043);
 				int temp_output_21_0_g13037 = saturate( EmissionGlowZone47_g13037 );
-				float3 lerpResult20_g13037 = lerp( temp_cast_124 , lerpResult17_g13043 , (float)temp_output_21_0_g13037);
-				float3 temp_cast_128 = (1.0).xxx;
+				float3 lerpResult20_g13037 = lerp( temp_cast_123 , lerpResult17_g13043 , (float)temp_output_21_0_g13037);
+				float3 temp_cast_127 = (1.0).xxx;
 				int clampResult8_g13045 = clamp( EmissionGlowZone47_g13037 , 1 , 4 );
 				int temp_output_3_0_g13045 = ( clampResult8_g13045 - 1 );
 				int Zone15_g13045 = temp_output_3_0_g13045;
@@ -2805,9 +2755,9 @@ Shader "Furality/Somna Shader"
 				float Delay11_g13045 = EmissionGlowDelay56_g13037;
 				float3 localLumaGlowLerp11_g13045 = LumaGlowLerp11_g13045( Band11_g13045 , Delay11_g13045 );
 				float3 lerpResult17_g13045 = lerp( ( localgetThemeData15_g13045 * localLumaGlowLerp11_g13045 ) , localLumaGlowLerp11_g13045 , (float)temp_output_13_0_g13045);
-				float3 lerpResult22_g13037 = lerp( temp_cast_128 , lerpResult17_g13045 , (float)temp_output_21_0_g13037);
+				float3 lerpResult22_g13037 = lerp( temp_cast_127 , lerpResult17_g13045 , (float)temp_output_21_0_g13037);
 				float3 lerpResult23_g13037 = lerp( lerpResult20_g13037 , lerpResult22_g13037 , (float)saturate( EmissionGlowMode35_g13037 ));
-				float4 temp_cast_138 = (1.0).xxxx;
+				float4 temp_cast_137 = (1.0).xxxx;
 				float temp_output_10_0_g13047 = EmissionGlowDelay56_g13037;
 				float Position1_g13049 = ( temp_output_10_0_g13047 / 127.0 );
 				float4 localAudioLinkLerp1_g13049 = AudioLinkLerp1_g13049( Position1_g13049 );
@@ -2818,15 +2768,15 @@ Shader "Furality/Somna Shader"
 				int Band11_g13048 = 56;
 				int localIsLumaActive11_g13048 = IsLumaActive11_g13048( Band11_g13048 );
 				float4 lerpResult14_g13047 = lerp( localAudioLinkLerp1_g13049 , float4( localLumaGlowLerp11_g13047 , 0.0 ) , (float)localIsLumaActive11_g13048);
-				float4 lerpResult52_g13037 = lerp( temp_cast_138 , lerpResult14_g13047 , (float)saturate( EmissionGlowZone47_g13037 ));
+				float4 lerpResult52_g13037 = lerp( temp_cast_137 , lerpResult14_g13047 , (float)saturate( EmissionGlowZone47_g13037 ));
 				float4 lerpResult51_g13037 = lerp( float4( lerpResult23_g13037 , 0.0 ) , lerpResult52_g13037 , (float)saturate( ( EmissionGlowZone47_g13037 - 4 ) ));
-				float4 temp_cast_143 = (_BlueChGlowMinBrightness).xxxx;
-				float4 temp_cast_144 = (( _BlueChGlowMinBrightness + 1.0 )).xxxx;
+				float4 temp_cast_142 = (_BlueChGlowMinBrightness).xxxx;
+				float4 temp_cast_143 = (( _BlueChGlowMinBrightness + 1.0 )).xxxx;
 				int temp_output_258_0_g13037 = saturate( EmissionGlowZone47_g13037 );
 				float localIfAudioLinkv2Exists1_g13053 = IfAudioLinkv2Exists1_g13053();
-				float4 lerpResult283_g13037 = lerp( float4( _BlueChGlowFallback.rgb , 0.0 ) , ( (temp_cast_143 + (lerpResult51_g13037 - float4( 0,0,0,0 )) * (temp_cast_144 - temp_cast_143) / (float4( 1,1,1,1 ) - float4( 0,0,0,0 ))) * float4( _BlueChGlowTint.rgb , 0.0 ) * temp_output_258_0_g13037 ) , localIfAudioLinkv2Exists1_g13053);
+				float4 lerpResult283_g13037 = lerp( float4( _BlueChGlowFallback.rgb , 0.0 ) , ( (temp_cast_142 + (lerpResult51_g13037 - float4( 0,0,0,0 )) * (temp_cast_143 - temp_cast_142) / (float4( 1,1,1,1 ) - float4( 0,0,0,0 ))) * float4( _BlueChGlowTint.rgb , 0.0 ) * temp_output_258_0_g13037 ) , localIfAudioLinkv2Exists1_g13053);
 				float4 EmissionGlow142_g13037 = lerpResult283_g13037;
-				float4 lerpResult261_g13037 = lerp( temp_cast_122 , EmissionGlow142_g13037 , (float)temp_output_258_0_g13037);
+				float4 lerpResult261_g13037 = lerp( temp_cast_121 , EmissionGlow142_g13037 , (float)temp_output_258_0_g13037);
 				float4 EmissionGlowTog262_g13037 = lerpResult261_g13037;
 				int EmissionReactiveBand243_g13037 = _BlueChReactiveBand;
 				int Band3_g13038 = EmissionReactiveBand243_g13037;
@@ -2867,8 +2817,8 @@ Shader "Furality/Somna Shader"
 				float lerpResult168_g13037 = lerp( 1.0 , localAudioLinkLerp3_g13042 , (float)temp_output_64_0_g13037);
 				float lerpResult172_g13037 = lerp( lerpResult103_g13037 , lerpResult168_g13037 , (float)saturate( ( EmissionReactiveMode99_g13037 - 4 ) ));
 				float ReactivityAlpha132_g13037 = (_BlueChReactiveMinBrightness + (lerpResult172_g13037 - 0.0) * (( _BlueChReactiveMinBrightness + 1.0 ) - _BlueChReactiveMinBrightness) / (1.0 - 0.0));
-				float3 temp_cast_155 = (1.0).xxx;
-				float3 lerpResult268_g13037 = lerp( temp_cast_155 , _BlueChReactiveTint.rgb , (float)step( EmissionReactiveBand243_g13037 , 9 ));
+				float3 temp_cast_154 = (1.0).xxx;
+				float3 lerpResult268_g13037 = lerp( temp_cast_154 , _BlueChReactiveTint.rgb , (float)step( EmissionReactiveBand243_g13037 , 9 ));
 				float3 FinalReactivity68_g13037 = ( ReactivityAlpha132_g13037 * lerpResult268_g13037 );
 				float4 lerpResult146_g13037 = lerp( ( EmissionGlowTog262_g13037 * float4( FinalReactivity68_g13037 , 0.0 ) ) , ( EmissionGlow142_g13037 + float4( FinalReactivity68_g13037 , 0.0 ) ) , (float)saturate( _BlueChReactiveBlendMode ));
 				float3 ReversedReactivity152_g13037 = ( ( 1.0 - ReactivityAlpha132_g13037 ) * lerpResult268_g13037 );
@@ -2880,8 +2830,8 @@ Shader "Furality/Somna Shader"
 				float4 lerpResult278_g13037 = lerp( float4( temp_output_286_0_g13037 , 0.0 ) , temp_output_213_0_g13037 , _EnableBlueChannel);
 				float temp_output_236_0_g13054 = (GlowMaskRGBA174_g12985).w;
 				float3 temp_output_286_0_g13054 = ( _AlphaChGlowFallback.rgb * temp_output_236_0_g13054 * _UseFallback3 );
-				float4 temp_cast_165 = (1.0).xxxx;
-				float3 temp_cast_167 = (1.0).xxx;
+				float4 temp_cast_164 = (1.0).xxxx;
+				float3 temp_cast_166 = (1.0).xxx;
 				int EmissionGlowZone47_g13054 = _AlphaChGlowZone;
 				int clampResult8_g13060 = clamp( EmissionGlowZone47_g13054 , 1 , 4 );
 				int temp_output_3_0_g13060 = ( clampResult8_g13060 - 1 );
@@ -2896,8 +2846,8 @@ Shader "Furality/Somna Shader"
 				float3 localLumaGlowData2_g13060 = LumaGlowData2_g13060( Band2_g13060 , Delay2_g13060 );
 				float3 lerpResult17_g13060 = lerp( ( localgetThemeData16_g13060 * localLumaGlowData2_g13060 ) , localLumaGlowData2_g13060 , (float)temp_output_14_0_g13060);
 				int temp_output_21_0_g13054 = saturate( EmissionGlowZone47_g13054 );
-				float3 lerpResult20_g13054 = lerp( temp_cast_167 , lerpResult17_g13060 , (float)temp_output_21_0_g13054);
-				float3 temp_cast_171 = (1.0).xxx;
+				float3 lerpResult20_g13054 = lerp( temp_cast_166 , lerpResult17_g13060 , (float)temp_output_21_0_g13054);
+				float3 temp_cast_170 = (1.0).xxx;
 				int clampResult8_g13062 = clamp( EmissionGlowZone47_g13054 , 1 , 4 );
 				int temp_output_3_0_g13062 = ( clampResult8_g13062 - 1 );
 				int Zone15_g13062 = temp_output_3_0_g13062;
@@ -2940,9 +2890,9 @@ Shader "Furality/Somna Shader"
 				float Delay11_g13062 = EmissionGlowDelay56_g13054;
 				float3 localLumaGlowLerp11_g13062 = LumaGlowLerp11_g13062( Band11_g13062 , Delay11_g13062 );
 				float3 lerpResult17_g13062 = lerp( ( localgetThemeData15_g13062 * localLumaGlowLerp11_g13062 ) , localLumaGlowLerp11_g13062 , (float)temp_output_13_0_g13062);
-				float3 lerpResult22_g13054 = lerp( temp_cast_171 , lerpResult17_g13062 , (float)temp_output_21_0_g13054);
+				float3 lerpResult22_g13054 = lerp( temp_cast_170 , lerpResult17_g13062 , (float)temp_output_21_0_g13054);
 				float3 lerpResult23_g13054 = lerp( lerpResult20_g13054 , lerpResult22_g13054 , (float)saturate( EmissionGlowMode35_g13054 ));
-				float4 temp_cast_181 = (1.0).xxxx;
+				float4 temp_cast_180 = (1.0).xxxx;
 				float temp_output_10_0_g13064 = EmissionGlowDelay56_g13054;
 				float Position1_g13066 = ( temp_output_10_0_g13064 / 127.0 );
 				float4 localAudioLinkLerp1_g13066 = AudioLinkLerp1_g13066( Position1_g13066 );
@@ -2953,15 +2903,15 @@ Shader "Furality/Somna Shader"
 				int Band11_g13065 = 56;
 				int localIsLumaActive11_g13065 = IsLumaActive11_g13065( Band11_g13065 );
 				float4 lerpResult14_g13064 = lerp( localAudioLinkLerp1_g13066 , float4( localLumaGlowLerp11_g13064 , 0.0 ) , (float)localIsLumaActive11_g13065);
-				float4 lerpResult52_g13054 = lerp( temp_cast_181 , lerpResult14_g13064 , (float)saturate( EmissionGlowZone47_g13054 ));
+				float4 lerpResult52_g13054 = lerp( temp_cast_180 , lerpResult14_g13064 , (float)saturate( EmissionGlowZone47_g13054 ));
 				float4 lerpResult51_g13054 = lerp( float4( lerpResult23_g13054 , 0.0 ) , lerpResult52_g13054 , (float)saturate( ( EmissionGlowZone47_g13054 - 4 ) ));
-				float4 temp_cast_186 = (_AlphaChGlowMinBrightness).xxxx;
-				float4 temp_cast_187 = (( _AlphaChGlowMinBrightness + 1.0 )).xxxx;
+				float4 temp_cast_185 = (_AlphaChGlowMinBrightness).xxxx;
+				float4 temp_cast_186 = (( _AlphaChGlowMinBrightness + 1.0 )).xxxx;
 				int temp_output_258_0_g13054 = saturate( EmissionGlowZone47_g13054 );
 				float localIfAudioLinkv2Exists1_g13070 = IfAudioLinkv2Exists1_g13070();
-				float4 lerpResult283_g13054 = lerp( float4( _AlphaChGlowFallback.rgb , 0.0 ) , ( (temp_cast_186 + (lerpResult51_g13054 - float4( 0,0,0,0 )) * (temp_cast_187 - temp_cast_186) / (float4( 1,1,1,1 ) - float4( 0,0,0,0 ))) * float4( _AlphaChGlowTint.rgb , 0.0 ) * temp_output_258_0_g13054 ) , localIfAudioLinkv2Exists1_g13070);
+				float4 lerpResult283_g13054 = lerp( float4( _AlphaChGlowFallback.rgb , 0.0 ) , ( (temp_cast_185 + (lerpResult51_g13054 - float4( 0,0,0,0 )) * (temp_cast_186 - temp_cast_185) / (float4( 1,1,1,1 ) - float4( 0,0,0,0 ))) * float4( _AlphaChGlowTint.rgb , 0.0 ) * temp_output_258_0_g13054 ) , localIfAudioLinkv2Exists1_g13070);
 				float4 EmissionGlow142_g13054 = lerpResult283_g13054;
-				float4 lerpResult261_g13054 = lerp( temp_cast_165 , EmissionGlow142_g13054 , (float)temp_output_258_0_g13054);
+				float4 lerpResult261_g13054 = lerp( temp_cast_164 , EmissionGlow142_g13054 , (float)temp_output_258_0_g13054);
 				float4 EmissionGlowTog262_g13054 = lerpResult261_g13054;
 				int EmissionReactiveBand243_g13054 = _AlphaChReactiveBand;
 				int Band3_g13055 = EmissionReactiveBand243_g13054;
@@ -3002,8 +2952,8 @@ Shader "Furality/Somna Shader"
 				float lerpResult168_g13054 = lerp( 1.0 , localAudioLinkLerp3_g13059 , (float)temp_output_64_0_g13054);
 				float lerpResult172_g13054 = lerp( lerpResult103_g13054 , lerpResult168_g13054 , (float)saturate( ( EmissionReactiveMode99_g13054 - 4 ) ));
 				float ReactivityAlpha132_g13054 = (_AlphaChReactiveMinBrightness + (lerpResult172_g13054 - 0.0) * (( _AlphaChReactiveMinBrightness + 1.0 ) - _AlphaChReactiveMinBrightness) / (1.0 - 0.0));
-				float3 temp_cast_198 = (1.0).xxx;
-				float3 lerpResult268_g13054 = lerp( temp_cast_198 , _AlphaChReactiveTint.rgb , (float)step( EmissionReactiveBand243_g13054 , 9 ));
+				float3 temp_cast_197 = (1.0).xxx;
+				float3 lerpResult268_g13054 = lerp( temp_cast_197 , _AlphaChReactiveTint.rgb , (float)step( EmissionReactiveBand243_g13054 , 9 ));
 				float3 FinalReactivity68_g13054 = ( ReactivityAlpha132_g13054 * lerpResult268_g13054 );
 				float4 lerpResult146_g13054 = lerp( ( EmissionGlowTog262_g13054 * float4( FinalReactivity68_g13054 , 0.0 ) ) , ( EmissionGlow142_g13054 + float4( FinalReactivity68_g13054 , 0.0 ) ) , (float)saturate( _AlphaChReactiveBlendMode ));
 				float3 ReversedReactivity152_g13054 = ( ( 1.0 - ReactivityAlpha132_g13054 ) * lerpResult268_g13054 );
@@ -3019,8 +2969,8 @@ Shader "Furality/Somna Shader"
 				float3 staticSwitch1503 = float3( 0,0,0 );
 				#endif
 				float3 temp_output_211_0_g13004 = ( staticSwitch1503 * EmissionMask1427 );
-				float4 temp_cast_208 = (1.0).xxxx;
-				float3 temp_cast_209 = (1.0).xxx;
+				float4 temp_cast_207 = (1.0).xxxx;
+				float3 temp_cast_208 = (1.0).xxx;
 				int EmissionGlowZone47_g13004 = _EmissionGlowZone;
 				int clampResult8_g13012 = clamp( EmissionGlowZone47_g13004 , 1 , 4 );
 				int temp_output_3_0_g13012 = ( clampResult8_g13012 - 1 );
@@ -3035,8 +2985,8 @@ Shader "Furality/Somna Shader"
 				float3 localLumaGlowData2_g13012 = LumaGlowData2_g13012( Band2_g13012 , Delay2_g13012 );
 				float3 lerpResult17_g13012 = lerp( ( localgetThemeData16_g13012 * localLumaGlowData2_g13012 ) , localLumaGlowData2_g13012 , (float)temp_output_14_0_g13012);
 				int temp_output_21_0_g13004 = saturate( EmissionGlowZone47_g13004 );
-				float3 lerpResult20_g13004 = lerp( temp_cast_209 , lerpResult17_g13012 , (float)temp_output_21_0_g13004);
-				float3 temp_cast_213 = (1.0).xxx;
+				float3 lerpResult20_g13004 = lerp( temp_cast_208 , lerpResult17_g13012 , (float)temp_output_21_0_g13004);
+				float3 temp_cast_212 = (1.0).xxx;
 				int clampResult8_g13014 = clamp( EmissionGlowZone47_g13004 , 1 , 4 );
 				int temp_output_3_0_g13014 = ( clampResult8_g13014 - 1 );
 				int Zone15_g13014 = temp_output_3_0_g13014;
@@ -3079,9 +3029,9 @@ Shader "Furality/Somna Shader"
 				float Delay11_g13014 = EmissionGlowDelay56_g13004;
 				float3 localLumaGlowLerp11_g13014 = LumaGlowLerp11_g13014( Band11_g13014 , Delay11_g13014 );
 				float3 lerpResult17_g13014 = lerp( ( localgetThemeData15_g13014 * localLumaGlowLerp11_g13014 ) , localLumaGlowLerp11_g13014 , (float)temp_output_13_0_g13014);
-				float3 lerpResult22_g13004 = lerp( temp_cast_213 , lerpResult17_g13014 , (float)temp_output_21_0_g13004);
+				float3 lerpResult22_g13004 = lerp( temp_cast_212 , lerpResult17_g13014 , (float)temp_output_21_0_g13004);
 				float3 lerpResult23_g13004 = lerp( lerpResult20_g13004 , lerpResult22_g13004 , (float)saturate( EmissionGlowMode35_g13004 ));
-				float4 temp_cast_223 = (1.0).xxxx;
+				float4 temp_cast_222 = (1.0).xxxx;
 				float temp_output_10_0_g13017 = EmissionGlowDelay56_g13004;
 				float Position1_g13019 = ( temp_output_10_0_g13017 / 127.0 );
 				float4 localAudioLinkLerp1_g13019 = AudioLinkLerp1_g13019( Position1_g13019 );
@@ -3092,13 +3042,13 @@ Shader "Furality/Somna Shader"
 				int Band11_g13018 = 56;
 				int localIsLumaActive11_g13018 = IsLumaActive11_g13018( Band11_g13018 );
 				float4 lerpResult14_g13017 = lerp( localAudioLinkLerp1_g13019 , float4( localLumaGlowLerp11_g13017 , 0.0 ) , (float)localIsLumaActive11_g13018);
-				float4 lerpResult52_g13004 = lerp( temp_cast_223 , lerpResult14_g13017 , (float)saturate( EmissionGlowZone47_g13004 ));
+				float4 lerpResult52_g13004 = lerp( temp_cast_222 , lerpResult14_g13017 , (float)saturate( EmissionGlowZone47_g13004 ));
 				float4 lerpResult51_g13004 = lerp( float4( lerpResult23_g13004 , 0.0 ) , lerpResult52_g13004 , (float)saturate( ( EmissionGlowZone47_g13004 - 4 ) ));
-				float4 temp_cast_228 = (_EmissionGlowMinBrightness).xxxx;
-				float4 temp_cast_229 = (( _EmissionGlowMinBrightness + 1.0 )).xxxx;
+				float4 temp_cast_227 = (_EmissionGlowMinBrightness).xxxx;
+				float4 temp_cast_228 = (( _EmissionGlowMinBrightness + 1.0 )).xxxx;
 				int temp_output_245_0_g13004 = saturate( EmissionGlowZone47_g13004 );
-				float4 EmissionGlow142_g13004 = ( (temp_cast_228 + (lerpResult51_g13004 - float4( 0,0,0,0 )) * (temp_cast_229 - temp_cast_228) / (float4( 1,1,1,1 ) - float4( 0,0,0,0 ))) * float4( _EmissionGlowTint.rgb , 0.0 ) * temp_output_245_0_g13004 );
-				float4 lerpResult248_g13004 = lerp( temp_cast_208 , EmissionGlow142_g13004 , (float)temp_output_245_0_g13004);
+				float4 EmissionGlow142_g13004 = ( (temp_cast_227 + (lerpResult51_g13004 - float4( 0,0,0,0 )) * (temp_cast_228 - temp_cast_227) / (float4( 1,1,1,1 ) - float4( 0,0,0,0 ))) * float4( _EmissionGlowTint.rgb , 0.0 ) * temp_output_245_0_g13004 );
+				float4 lerpResult248_g13004 = lerp( temp_cast_207 , EmissionGlow142_g13004 , (float)temp_output_245_0_g13004);
 				float4 EmissionGlowTog249_g13004 = lerpResult248_g13004;
 				int EmissionReactiveBand254_g13004 = _EmissionReactiveBand;
 				int Band3_g13005 = EmissionReactiveBand254_g13004;
@@ -3139,8 +3089,8 @@ Shader "Furality/Somna Shader"
 				float lerpResult168_g13004 = lerp( 1.0 , localAudioLinkLerp3_g13009 , (float)temp_output_64_0_g13004);
 				float lerpResult172_g13004 = lerp( lerpResult103_g13004 , lerpResult168_g13004 , (float)saturate( ( EmissionReactiveMode99_g13004 - 4 ) ));
 				float ReactivityAlpha132_g13004 = (_EmissionReactiveMinBrightness + (lerpResult172_g13004 - 0.0) * (( _EmissionReactiveMinBrightness + 1.0 ) - _EmissionReactiveMinBrightness) / (1.0 - 0.0));
-				float3 temp_cast_240 = (1.0).xxx;
-				float3 lerpResult265_g13004 = lerp( temp_cast_240 , _EmissionReactiveTint.rgb , (float)step( EmissionReactiveBand254_g13004 , 9 ));
+				float3 temp_cast_239 = (1.0).xxx;
+				float3 lerpResult265_g13004 = lerp( temp_cast_239 , _EmissionReactiveTint.rgb , (float)step( EmissionReactiveBand254_g13004 , 9 ));
 				float3 FinalReactivity68_g13004 = ( ReactivityAlpha132_g13004 * lerpResult265_g13004 );
 				float4 lerpResult146_g13004 = lerp( ( EmissionGlowTog249_g13004 * float4( FinalReactivity68_g13004 , 0.0 ) ) , ( EmissionGlow142_g13004 + float4( FinalReactivity68_g13004 , 0.0 ) ) , (float)saturate( _EmissionReactiveBlendMode ));
 				float3 ReversedReactivity152_g13004 = ( ( 1.0 - ReactivityAlpha132_g13004 ) * lerpResult265_g13004 );
@@ -3163,12 +3113,12 @@ Shader "Furality/Somna Shader"
 				float4 staticSwitch284_g13004 = float4( 0,0,0,0 );
 				#endif
 				float4 LumaGlow2018 = ( ( lerpResult280_g12987 + lerpResult276_g13020 + lerpResult278_g13037 + lerpResult278_g13054 ) + staticSwitch284_g13004 );
-				float3 temp_cast_254 = (( 1.0 / 3.0 )).xxx;
-				float3 temp_cast_255 = (1.0).xxx;
-				float3 lerpResult90_g13099 = lerp( temp_cast_255 , _StarshineColor , 0.2);
+				float3 temp_cast_253 = (( 1.0 / 3.0 )).xxx;
+				float3 temp_cast_254 = (1.0).xxx;
+				float3 lerpResult90_g13099 = lerp( temp_cast_254 , _StarshineColor , 0.2);
 				float3 temp_output_88_0_g13099 = ( lerpResult90_g13099 * 1.1 );
 				float3 lerpResult61_g13099 = lerp( temp_output_88_0_g13099 , temp_output_69_0_g13099 , _StarshineMetallic);
-				float3 temp_cast_256 = (( 1.0 / 3.0 )).xxx;
+				float3 temp_cast_255 = (( 1.0 / 3.0 )).xxx;
 				float2 _Vector2 = float2(0.7517731,0.9574468);
 				float mulTime6_g13104 = _Time.y * _StarshineSpeed;
 				float temp_output_46_0_g13099 = fmod( mulTime6_g13104 , 7200.0 );
@@ -3185,10 +3135,10 @@ Shader "Furality/Somna Shader"
 				float temp_output_12_0_g13099 = max( simplePerlin3D10_g13099 , simplePerlin3D11_g13099 );
 				float smoothstepResult15_g13099 = smoothstep( _Vector2.x , _Vector2.y , temp_output_12_0_g13099);
 				float temp_output_31_0_g13099 = ( 2.0 * smoothstepResult15_g13099 );
-				float3 lerpResult30_g13099 = lerp( mul( pow( mul( temp_output_28_0_g13099, float3x3(0.4121656,0.2118591,0.08830979,0.5362752,0.680719,0.2818474,0.05145757,0.1074066,0.6302614) ) , temp_cast_254 ), float3x3(0.2104543,1.977998,0.02590404,0.7936178,-2.428592,0.7827718,0.004072047,0.4505937,-0.8086758) ) , mul( pow( mul( lerpResult61_g13099, float3x3(0.4121656,0.2118591,0.08830979,0.5362752,0.680719,0.2818474,0.05145757,0.1074066,0.6302614) ) , temp_cast_256 ), float3x3(0.2104543,1.977998,0.02590404,0.7936178,-2.428592,0.7827718,0.004072047,0.4505937,-0.8086758) ) , saturate( temp_output_31_0_g13099 ));
+				float3 lerpResult30_g13099 = lerp( mul( pow( mul( temp_output_28_0_g13099, float3x3(0.4121656,0.2118591,0.08830979,0.5362752,0.680719,0.2818474,0.05145757,0.1074066,0.6302614) ) , temp_cast_253 ), float3x3(0.2104543,1.977998,0.02590404,0.7936178,-2.428592,0.7827718,0.004072047,0.4505937,-0.8086758) ) , mul( pow( mul( lerpResult61_g13099, float3x3(0.4121656,0.2118591,0.08830979,0.5362752,0.680719,0.2818474,0.05145757,0.1074066,0.6302614) ) , temp_cast_255 ), float3x3(0.2104543,1.977998,0.02590404,0.7936178,-2.428592,0.7827718,0.004072047,0.4505937,-0.8086758) ) , saturate( temp_output_31_0_g13099 ));
 				float3 lerpResult60_g13099 = lerp( temp_output_88_0_g13099 , ( temp_output_69_0_g13099 * temp_output_88_0_g13099 ) , _StarshineMetallic);
-				float3 temp_cast_257 = (( 1.0 / 3.0 )).xxx;
-				float3 lerpResult16_g13099 = lerp( lerpResult30_g13099 , mul( pow( mul( lerpResult60_g13099, float3x3(0.4121656,0.2118591,0.08830979,0.5362752,0.680719,0.2818474,0.05145757,0.1074066,0.6302614) ) , temp_cast_257 ), float3x3(0.2104543,1.977998,0.02590404,0.7936178,-2.428592,0.7827718,0.004072047,0.4505937,-0.8086758) ) , saturate( ( temp_output_31_0_g13099 - 1.0 ) ));
+				float3 temp_cast_256 = (( 1.0 / 3.0 )).xxx;
+				float3 lerpResult16_g13099 = lerp( lerpResult30_g13099 , mul( pow( mul( lerpResult60_g13099, float3x3(0.4121656,0.2118591,0.08830979,0.5362752,0.680719,0.2818474,0.05145757,0.1074066,0.6302614) ) , temp_cast_256 ), float3x3(0.2104543,1.977998,0.02590404,0.7936178,-2.428592,0.7827718,0.004072047,0.4505937,-0.8086758) ) , saturate( ( temp_output_31_0_g13099 - 1.0 ) ));
 				float2 _Vector1 = float2(0.4338517,0.8231586);
 				float smoothstepResult14_g13099 = smoothstep( _Vector1.x , _Vector1.y , temp_output_12_0_g13099);
 				float3 temp_output_2_0_g13102 = mul( ( lerpResult16_g13099 * ( _StarshineIntensity * smoothstepResult14_g13099 ) ), float3x3(1,1,1,0.3963378,-0.1055613,-0.08948418,0.2158038,-0.06385417,-1.291486) );
@@ -3210,8 +3160,8 @@ Shader "Furality/Somna Shader"
 				#endif
 				float FabricLightChannel783_g12820 = _FabricLightChannel;
 				float FabricLightMap782_g12820 = _FabricLightMap;
-				float4 temp_cast_261 = (1.0).xxxx;
-				float4 temp_output_786_0_g12820 = ( 4.0 == FabricLightMap782_g12820 ? temp_cast_261 : ( 3.0 == FabricLightMap782_g12820 ? MM04RGBA8_g12820 : ( 2.0 == FabricLightMap782_g12820 ? MM03RGBA7_g12820 : ( 1.0 == FabricLightMap782_g12820 ? MM02RGBA6_g12820 : MM01RGBA5_g12820 ) ) ) );
+				float4 temp_cast_260 = (1.0).xxxx;
+				float4 temp_output_786_0_g12820 = ( 4.0 == FabricLightMap782_g12820 ? temp_cast_260 : ( 3.0 == FabricLightMap782_g12820 ? MM04RGBA8_g12820 : ( 2.0 == FabricLightMap782_g12820 ? MM03RGBA7_g12820 : ( 1.0 == FabricLightMap782_g12820 ? MM02RGBA6_g12820 : MM01RGBA5_g12820 ) ) ) );
 				float4 FabricLightRGBA784_g12820 = temp_output_786_0_g12820;
 				float FabricLightMask2574 = ( 3.0 == FabricLightChannel783_g12820 ? (FabricLightRGBA784_g12820).a : ( 2.0 == FabricLightChannel783_g12820 ? (FabricLightRGBA784_g12820).b : ( 1.0 == FabricLightChannel783_g12820 ? (FabricLightRGBA784_g12820).g : (FabricLightRGBA784_g12820).r ) ) );
 				#if ( SHADER_TARGET >= 50 )
@@ -3245,8 +3195,8 @@ Shader "Furality/Somna Shader"
 				float Alpha847 = (temp_output_835_0).a;
 				float temp_output_678_0_g12820 = Alpha847;
 				float AlphaChannel670_g12820 = _OpacityChannel;
-				float4 temp_cast_265 = (1.0).xxxx;
-				float4 AlphaRGBA657_g12820 = ( 4.0 == AlphaMap671_g12820 ? temp_cast_265 : ( 3.0 == AlphaMap671_g12820 ? MM04RGBA8_g12820 : ( 2.0 == AlphaMap671_g12820 ? MM03RGBA7_g12820 : ( 1.0 == AlphaMap671_g12820 ? MM02RGBA6_g12820 : MM01RGBA5_g12820 ) ) ) );
+				float4 temp_cast_264 = (1.0).xxxx;
+				float4 AlphaRGBA657_g12820 = ( 4.0 == AlphaMap671_g12820 ? temp_cast_264 : ( 3.0 == AlphaMap671_g12820 ? MM04RGBA8_g12820 : ( 2.0 == AlphaMap671_g12820 ? MM03RGBA7_g12820 : ( 1.0 == AlphaMap671_g12820 ? MM02RGBA6_g12820 : MM01RGBA5_g12820 ) ) ) );
 				float temp_output_2995_674 = ( 5.0 == AlphaMap671_g12820 ? temp_output_678_0_g12820 : ( 3.0 == AlphaChannel670_g12820 ? (AlphaRGBA657_g12820).a : ( 2.0 == AlphaChannel670_g12820 ? (AlphaRGBA657_g12820).b : ( 1.0 == AlphaChannel670_g12820 ? (AlphaRGBA657_g12820).g : (AlphaRGBA657_g12820).r ) ) ) );
 				#if defined( _ALPHATEST_ON )
 				float staticSwitch2920 = temp_output_2995_674;
@@ -6569,7 +6519,6 @@ Node;AmplifyShaderEditor.RangedFloatNode;1051;2206.045,1595.522;Inherit;False;Co
 Node;AmplifyShaderEditor.SimpleMinOpNode;1054;2599.041,1624.522;Inherit;False;2;0;INT;0;False;1;FLOAT;0;False;1;FLOAT;0
 Node;AmplifyShaderEditor.LerpOp;1055;2449.041,1476.522;Inherit;False;3;0;FLOAT3;0,0,0;False;1;FLOAT3;0,0,0;False;2;FLOAT;0;False;1;FLOAT3;0
 Node;AmplifyShaderEditor.IndirectDiffuseLighting;1037;1911.915,1374.063;Inherit;False;World;1;0;FLOAT3;0,0,1;False;1;FLOAT3;0
-Node;AmplifyShaderEditor.SimpleMaxOpNode;1038;2190.611,1373.556;Inherit;False;2;0;FLOAT3;0,0,0;False;1;FLOAT3;0,0,0;False;1;FLOAT3;0
 Node;AmplifyShaderEditor.RegisterLocalVarNode;1046;3305.25,1378.827;Inherit;False;LightColBase;-1;True;1;0;FLOAT3;0,0,0;False;1;FLOAT3;0
 Node;AmplifyShaderEditor.CustomExpressionNode;993;2483.627,4001.79;Inherit;False;return unity_4LightAtten0.z@;1;Create;0;LightAttenTwo;False;False;0;;False;0;1;FLOAT;0
 Node;AmplifyShaderEditor.CustomExpressionNode;992;3005.24,3802.888;Inherit;False;return unity_LightColor[2]@;3;Create;0;LightColorTwo;False;False;0;;False;0;1;FLOAT3;0
@@ -6726,7 +6675,6 @@ Node;AmplifyShaderEditor.StaticSwitch;1765;854.9905,636.8346;Inherit;False;Prope
 Node;AmplifyShaderEditor.RegisterLocalVarNode;1647;9938.453,3041.181;Inherit;False;Starshine;-1;True;1;0;FLOAT3;0,0,0;False;1;FLOAT3;0
 Node;AmplifyShaderEditor.GetLocalVarNode;1648;6781.973,193.0647;Inherit;False;1647;Starshine;1;0;OBJECT;;False;1;FLOAT3;0
 Node;AmplifyShaderEditor.RangedFloatNode;2100;6804.092,110.6889;Inherit;False;Constant;_Float38;Float 38;91;0;Create;True;0;0;0;False;0;False;0;0;0;0;0;1;FLOAT;0
-Node;AmplifyShaderEditor.GetLocalVarNode;1063;4378.07,1423.816;Inherit;False;1046;LightColBase;1;0;OBJECT;;False;1;FLOAT3;0
 Node;AmplifyShaderEditor.RegisterLocalVarNode;2057;861.8284,562.6196;Inherit;False;AttenBaseColor;-1;True;1;0;FLOAT3;0,0,0;False;1;FLOAT3;0
 Node;AmplifyShaderEditor.FunctionNode;2110;-1536.014,2193.955;Inherit;False;UV Channel Select;-1;;12829;36e8c8f20cc04d74c8de55cbffb0df3c;2,50,1,120,0;3;2;SAMPLER2D;0;False;14;FLOAT;0;False;52;FLOAT2;0,0;False;1;FLOAT2;0
 Node;AmplifyShaderEditor.FunctionNode;2111;246.0875,2197.67;Inherit;False;UV Channel Select;-1;;12830;36e8c8f20cc04d74c8de55cbffb0df3c;2,50,1,120,0;3;2;SAMPLER2D;0;False;14;FLOAT;0;False;52;FLOAT2;0,0;False;1;FLOAT2;0
@@ -6757,7 +6705,6 @@ Node;AmplifyShaderEditor.GetLocalVarNode;1072;3997.941,588.3049;Inherit;False;60
 Node;AmplifyShaderEditor.GetLocalVarNode;2195;3975.522,74.24982;Inherit;False;2194;WorldNormToon;1;0;OBJECT;;False;1;FLOAT3;0
 Node;AmplifyShaderEditor.GetLocalVarNode;2170;9041.152,2843.231;Inherit;False;608;NdotLBase;1;0;OBJECT;;False;1;FLOAT;0
 Node;AmplifyShaderEditor.RangedFloatNode;2206;9245.564,2721.115;Inherit;False;Constant;_Float1;Float 1;97;0;Create;True;0;0;0;False;0;False;1;0;0;0;0;1;FLOAT;0
-Node;AmplifyShaderEditor.RegisterLocalVarNode;2207;4686.593,1535.879;Inherit;False;Attenuation;-1;True;1;0;FLOAT;0;False;1;FLOAT;0
 Node;AmplifyShaderEditor.FunctionNode;1817;-231.0839,-655.0128;Inherit;False;VR_Center_Eye;-1;;12832;6a5fa12a130419d48a65f3bc6d3cdd19;0;0;2;FLOAT3;0;FLOAT3;2
 Node;AmplifyShaderEditor.ViewDirInputsCoordNode;638;-393.992,-544.0718;Inherit;False;World;True;0;4;FLOAT3;0;FLOAT;1;FLOAT;2;FLOAT;3
 Node;AmplifyShaderEditor.StaticSwitch;2210;-130.5244,-497.1266;Inherit;False;Property;_Keyword20;Keyword 20;141;0;Create;True;0;0;0;False;0;False;0;0;0;True;;Toggle;2;Key0;Key1;Reference;2024;True;True;All;9;1;FLOAT3;0,0,0;False;0;FLOAT3;0,0,0;False;2;FLOAT3;0,0,0;False;3;FLOAT3;0,0,0;False;4;FLOAT3;0,0,0;False;5;FLOAT3;0,0,0;False;6;FLOAT3;0,0,0;False;7;FLOAT3;0,0,0;False;8;FLOAT3;0,0,0;False;1;FLOAT3;0
@@ -7014,7 +6961,6 @@ Node;AmplifyShaderEditor.SimpleMultiplyOpNode;1667;9787.723,3070.171;Inherit;Fal
 Node;AmplifyShaderEditor.GetLocalVarNode;2958;9554.72,3210.856;Inherit;False;2207;Attenuation;1;0;OBJECT;;False;1;FLOAT;0
 Node;AmplifyShaderEditor.SimpleMultiplyOpNode;1656;9593.074,3041.697;Inherit;False;2;2;0;FLOAT3;0,0,0;False;1;FLOAT3;0,0,0;False;1;FLOAT3;0
 Node;AmplifyShaderEditor.GetLocalVarNode;1626;8745.235,2996.584;Inherit;False;571;PixelLightsBase;1;0;OBJECT;;False;1;FLOAT3;0
-Node;AmplifyShaderEditor.RegisterLocalVarNode;571;4773.428,1429.286;Inherit;False;PixelLightsBase;-1;True;1;0;FLOAT3;0,0,0;False;1;FLOAT3;0
 Node;AmplifyShaderEditor.GetLocalVarNode;1657;8727.767,3193.806;Inherit;False;615;MainPassLight;1;0;OBJECT;;False;1;FLOAT3;0
 Node;AmplifyShaderEditor.SimpleMaxOpNode;2961;9773.418,3227.437;Inherit;False;2;0;FLOAT;0.2;False;1;FLOAT;0;False;1;FLOAT;0
 Node;AmplifyShaderEditor.FunctionNode;2965;9009.908,2924.143;Inherit;False;Somna Starshine;36;;13099;dd86d69408a750349b7058ea20713790;0;6;82;FLOAT;0;False;85;FLOAT;0;False;53;FLOAT3;0,0,0;False;67;FLOAT3;0,0,0;False;43;FLOAT3;0,0,0;False;26;FLOAT3;0,0,0;False;3;FLOAT;59;FLOAT3;51;FLOAT3;0
@@ -7184,7 +7130,6 @@ Node;AmplifyShaderEditor.TemplateLocalVarsNode;3131;3522.799,1361.332;Inherit;Fa
 Node;AmplifyShaderEditor.TemplateLocalVarsNode;3133;3520.2,1443.232;Inherit;False;0;1;atten;0;5;FLOAT;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4
 Node;AmplifyShaderEditor.TemplateLocalVarsNode;3134;3500.7,1565.432;Inherit;False;0;4;atten;0;5;FLOAT;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4
 Node;AmplifyShaderEditor.StaticSwitch;2026;4371.542,1486.597;Inherit;False;Property;_Keyword2;Keyword 1;141;0;Create;True;0;0;0;False;0;False;0;0;0;True;;Toggle;2;Key0;Key1;Reference;2024;True;True;All;9;1;FLOAT;0;False;0;FLOAT;0;False;2;FLOAT;0;False;3;FLOAT;0;False;4;FLOAT;0;False;5;FLOAT;0;False;6;FLOAT;0;False;7;FLOAT;0;False;8;FLOAT;0;False;1;FLOAT;0
-Node;AmplifyShaderEditor.LightColorNode;511;4134.689,1707.627;Inherit;False;0;3;COLOR;0;FLOAT3;1;FLOAT;2
 Node;AmplifyShaderEditor.SimpleMultiplyOpNode;1033;4624.562,1654.776;Inherit;False;2;2;0;FLOAT;0;False;1;FLOAT3;0,0,0;False;1;FLOAT3;0
 Node;AmplifyShaderEditor.StaticSwitch;3136;4704.499,1763.032;Inherit;False;Property;_Keyword23;Keyword 1;141;0;Create;True;0;0;0;False;0;False;0;0;0;True;;Toggle;2;Key0;Key1;Reference;2024;True;True;All;9;1;FLOAT3;0,0,0;False;0;FLOAT3;0,0,0;False;2;FLOAT3;0,0,0;False;3;FLOAT3;0,0,0;False;4;FLOAT3;0,0,0;False;5;FLOAT3;0,0,0;False;6;FLOAT3;0,0,0;False;7;FLOAT3;0,0,0;False;8;FLOAT3;0,0,0;False;1;FLOAT3;0
 Node;AmplifyShaderEditor.GetLocalVarNode;619;8424.557,484.1519;Inherit;False;618;AddPassLight;1;0;OBJECT;;False;1;FLOAT3;0
@@ -7196,8 +7141,6 @@ Node;AmplifyShaderEditor.SimpleMultiplyOpNode;684;8641.485,562.3613;Inherit;Fals
 Node;AmplifyShaderEditor.GetLocalVarNode;2048;8422.105,634.8406;Inherit;False;618;AddPassLight;1;0;OBJECT;;False;1;FLOAT3;0
 Node;AmplifyShaderEditor.SimpleMultiplyOpNode;3142;9005.789,420.2434;Inherit;False;2;2;0;FLOAT3;0,0,0;False;1;FLOAT;0;False;1;FLOAT3;0
 Node;AmplifyShaderEditor.SimpleMultiplyOpNode;3140;8922.298,240.7204;Inherit;False;2;2;0;FLOAT;0;False;1;FLOAT3;0,0,0;False;1;FLOAT3;0
-Node;AmplifyShaderEditor.RegisterLocalVarNode;3135;4113.5,1404.38;Inherit;False;rawAttenuation;-1;True;1;0;FLOAT;0;False;1;FLOAT;0
-Node;AmplifyShaderEditor.GetLocalVarNode;3137;8353.695,204.6177;Inherit;False;3135;rawAttenuation;1;0;OBJECT;;False;1;FLOAT;0
 Node;AmplifyShaderEditor.SimpleMultiplyOpNode;3143;8617.438,272.7441;Inherit;False;2;2;0;FLOAT;0;False;1;FLOAT;0;False;1;FLOAT;0
 Node;AmplifyShaderEditor.FunctionNode;3144;4283.503,585.0919;Inherit;False;GGX_Specular_Light;-1;;13264;d8a67d11c3dffde4eb8ff8f5fa698803;8,322,1,326,1,329,0,354,1,362,1,318,1,364,1,366,1;14;381;FLOAT;0;False;365;FLOAT3;0,0,0;False;358;FLOAT;0;False;353;FLOAT;0;False;328;FLOAT3;0,0,0;False;327;FLOAT3;0,0,0;False;335;FLOAT3;0,0,0;False;286;FLOAT3;0,0,0;False;30;FLOAT3;0,0,0;False;317;FLOAT3;0,0,0;False;359;FLOAT3;0,0,0;False;146;FLOAT3;0,0,0;False;147;FLOAT;0;False;302;FLOAT;0;False;3;FLOAT3;315;FLOAT3;0;FLOAT;316
 Node;AmplifyShaderEditor.FunctionNode;3145;4280.314,331.8553;Inherit;False;GGX_Specular_Light;-1;;13272;d8a67d11c3dffde4eb8ff8f5fa698803;8,322,1,326,1,329,0,354,0,362,0,318,1,364,1,366,0;14;381;FLOAT;0;False;365;FLOAT3;0,0,0;False;358;FLOAT;0;False;353;FLOAT;0;False;328;FLOAT3;0,0,0;False;327;FLOAT3;0,0,0;False;335;FLOAT3;0,0,0;False;286;FLOAT3;0,0,0;False;30;FLOAT3;0,0,0;False;317;FLOAT3;0,0,0;False;359;FLOAT3;0,0,0;False;146;FLOAT3;0,0,0;False;147;FLOAT;0;False;302;FLOAT;0;False;3;FLOAT3;315;FLOAT3;0;FLOAT;316
@@ -7216,6 +7159,13 @@ Node;AmplifyShaderEditor.SimpleMaxOpNode;3156;9194.124,467.6931;Inherit;False;2;
 Node;AmplifyShaderEditor.RangedFloatNode;2161;8325.861,2999.088;Inherit;False;Property;_StencilReference;Stencil Reference;135;0;Create;True;0;0;0;True;0;False;33;0;1;255;0;1;FLOAT;0
 Node;AmplifyShaderEditor.StaticSwitch;1952;8139.062,3141.875;Inherit;False;Property;_Outline1Enable;_OutlineEnable;147;0;Create;False;0;0;0;True;0;False;0;0;0;True;_OUTLINE1_ON;Toggle;2;_OUTLINE_OFF;_OUTLINE_ON;Create;True;False;All;9;1;COLOR;0,0,0,0;False;0;COLOR;0,0,0,0;False;2;COLOR;0,0,0,0;False;3;COLOR;0,0,0,0;False;4;COLOR;0,0,0,0;False;5;COLOR;0,0,0,0;False;6;COLOR;0,0,0,0;False;7;COLOR;0,0,0,0;False;8;COLOR;0,0,0,0;False;1;COLOR;0
 Node;AmplifyShaderEditor.StaticSwitch;2898;-1592.741,-844.0999;Inherit;False;Property;_ALPHAPREMULTIPLY;_ALPHAPREMULTIPLY;130;0;Create;True;0;0;0;True;0;False;0;0;0;True;;Toggle;2;Key0;Key1;Create;False;True;All;9;1;FLOAT;0;False;0;FLOAT;0;False;2;FLOAT;0;False;3;FLOAT;0;False;4;FLOAT;0;False;5;FLOAT;0;False;6;FLOAT;0;False;7;FLOAT;0;False;8;FLOAT;0;False;1;FLOAT;0
+Node;AmplifyShaderEditor.RegisterLocalVarNode;3135;4113.5,1403.248;Inherit;False;rawAttenuation;-1;True;1;0;FLOAT;0;False;1;FLOAT;0
+Node;AmplifyShaderEditor.GetLocalVarNode;3137;8320.695,218.6177;Inherit;False;3135;rawAttenuation;1;0;OBJECT;;False;1;FLOAT;0
+Node;AmplifyShaderEditor.RegisterLocalVarNode;2207;4686.593,1535.879;Inherit;False;Attenuation;-1;True;1;0;FLOAT;0;False;1;FLOAT;0
+Node;AmplifyShaderEditor.RegisterLocalVarNode;571;4773.428,1429.286;Inherit;False;PixelLightsBase;-1;True;1;0;FLOAT3;0,0,0;False;1;FLOAT3;0
+Node;AmplifyShaderEditor.GetLocalVarNode;1063;4378.07,1423.816;Inherit;False;1046;LightColBase;1;0;OBJECT;;False;1;FLOAT3;0
+Node;AmplifyShaderEditor.SimpleMaxOpNode;1038;2190.611,1373.556;Inherit;False;2;0;FLOAT3;0,0,0;False;1;FLOAT3;0,0,0;False;1;FLOAT3;0
+Node;AmplifyShaderEditor.LightColorNode;511;4134.689,1707.627;Inherit;False;0;3;COLOR;0;FLOAT3;1;FLOAT;2
 Node;AmplifyShaderEditor.TemplateMultiPassMasterNode;2220;8031.287,-50.64004;Float;False;True;-1;3;SomnaShaderUI;0;12;Furality/Somna Shader;088ce90f5f78914459e55515008cbb32;True;FORWARD;0;0;FORWARD;6;True;True;1;0;True;_SourceBlendRGB;0;True;_DestinationBlendRGB;0;1;False;;0;False;;True;0;False;_SourceBlendRGB;0;False;;False;False;False;False;False;False;False;False;False;True;0;False;;True;True;0;True;_Culling;False;True;True;True;True;True;0;False;;False;False;False;False;False;False;True;True;True;0;True;_StencilReference;255;False;;255;False;;7;False;;3;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;True;True;1;True;_ZWrite;True;3;False;;False;True;3;RenderType=Opaque=RenderType;Queue=Geometry=Queue=0;DisableBatching=False=DisableBatching;True;7;False;0;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;1;LightMode=ForwardBase;False;False;0;;0;0;Standard;3;Vertex Position,InvertActionOnDeselection;0;638787892626673367;Receive Shadows;1;0;Built-in Fog;1;0;0;5;True;True;True;True;True;False;;False;0
 Node;AmplifyShaderEditor.TemplateMultiPassMasterNode;2224;8948.45,-130.9668;Float;False;False;-1;3;AmplifyShaderEditor.MaterialInspector;0;12;New Amplify Shader;088ce90f5f78914459e55515008cbb32;True;shadowcaster;0;4;shadowcaster;6;False;True;0;1;False;;0;False;;0;1;False;;0;False;;True;0;False;;0;False;;False;False;False;False;False;False;False;False;False;True;0;False;;False;True;0;False;;False;True;True;True;True;True;0;False;;False;False;False;False;False;False;False;True;False;0;False;;255;False;;255;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;False;True;1;False;;True;3;False;;False;True;3;RenderType=Opaque=RenderType;Queue=Geometry=Queue=0;DisableBatching=False=DisableBatching;True;2;False;0;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;1;False;;True;3;False;;False;True;1;LightMode=shadowcaster;False;False;0;;0;0;Standard;0;False;0
 Node;AmplifyShaderEditor.TemplateMultiPassMasterNode;2222;8399.846,3212.804;Float;False;False;-1;3;AmplifyShaderEditor.MaterialInspector;0;12;New Amplify Shader;088ce90f5f78914459e55515008cbb32;True;Outline;0;2;Outline;2;False;True;0;1;False;;0;False;;0;1;False;;0;False;;True;0;False;;0;False;;False;False;False;False;False;False;False;False;False;True;0;False;;False;True;0;False;;False;True;True;True;True;True;0;False;;False;False;False;False;False;False;False;True;False;0;False;;255;False;;255;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;False;True;1;False;;True;3;False;;False;True;3;RenderType=Opaque=RenderType;Queue=Geometry=Queue=0;DisableBatching=False=DisableBatching;True;2;False;0;True;True;2;5;True;_SourceBlendRGB;10;True;_DestinationBlendRGB;0;1;False;;0;False;;True;0;False;;0;False;;False;False;False;False;False;False;False;False;False;True;0;False;;True;True;2;False;;False;True;True;True;True;True;0;False;;False;False;False;False;False;False;True;True;True;0;True;_StencilReference;255;False;;255;False;;6;False;;1;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;True;True;1;False;;True;3;False;;True;False;0;False;;0;False;;True;1;Queue=Transparent=Queue=1;True;2;False;0;;0;0;Standard;0;False;0
@@ -7501,8 +7451,7 @@ WireConnection;1055;0;1038;0
 WireConnection;1055;1;1050;0
 WireConnection;1055;2;1051;0
 WireConnection;1037;0;1061;0
-WireConnection;1038;0;1037;0
-WireConnection;1046;0;1044;0
+WireConnection;1046;0;1042;1
 WireConnection;949;0;950;0
 WireConnection;1081;0;2078;0
 WireConnection;637;0;641;0
@@ -7521,7 +7470,7 @@ WireConnection;1050;0;2036;0
 WireConnection;1057;0;1039;0
 WireConnection;1044;0;1058;0
 WireConnection;1044;1;1047;0
-WireConnection;1044;2;1041;0
+WireConnection;1044;2;1038;0
 WireConnection;1044;3;1042;1
 WireConnection;1313;0;1137;0
 WireConnection;1313;1;1314;0
@@ -7681,7 +7630,6 @@ WireConnection;2126;1;2122;0
 WireConnection;2126;0;2121;0
 WireConnection;2193;0;2192;0
 WireConnection;601;0;600;0
-WireConnection;2207;0;2026;0
 WireConnection;2210;1;638;0
 WireConnection;2210;0;1817;2
 WireConnection;2211;0;638;0
@@ -7924,7 +7872,6 @@ WireConnection;1667;1;1666;0
 WireConnection;1667;2;2961;0
 WireConnection;1656;0;2965;0
 WireConnection;1656;1;1657;0
-WireConnection;571;0;512;0
 WireConnection;2961;1;2959;0
 WireConnection;2965;53;1687;0
 WireConnection;2965;67;1776;0
@@ -8115,7 +8062,6 @@ WireConnection;3142;0;2062;0
 WireConnection;3142;1;3137;0
 WireConnection;3140;0;3141;0
 WireConnection;3140;1;2062;0
-WireConnection;3135;0;514;0
 WireConnection;3143;0;3137;0
 WireConnection;3143;1;3137;0
 WireConnection;3144;365;1074;0
@@ -8161,6 +8107,11 @@ WireConnection;3153;2;3149;1
 WireConnection;3155;0;562;0
 WireConnection;3156;0;3142;0
 WireConnection;1952;0;1188;0
+WireConnection;3135;0;514;0
+WireConnection;2207;0;2026;0
+WireConnection;571;0;512;0
+WireConnection;1038;0;1037;0
+WireConnection;1038;1;1042;1
 WireConnection;2220;0;3155;0
 WireConnection;2220;1;1176;0
 WireConnection;2220;2;1182;0
@@ -8177,4 +8128,4 @@ WireConnection;2221;1;1177;0
 WireConnection;2221;2;1183;0
 WireConnection;2221;3;1199;0
 ASEEND*/
-//CHKSM=E73FB9C3B0160C7EF59F781B0F72E405360DE35F
+//CHKSM=8EE80185ABE285C60F0BB6426363698D5FEDCDB1
