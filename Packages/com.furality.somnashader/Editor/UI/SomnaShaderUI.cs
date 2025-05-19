@@ -280,7 +280,7 @@ public class SomnaShaderUI : ShaderGUI
                 continue;
             if (props.ContainsKey(props[propertiesLocal[i].name].name))
             {
-                #if DEBUG
+                #if FURALITY_SHADER_UI_DEBUG
                 Debug.Log($"Furality Shader GUI: {propertiesLocal[i].name} {props[propertiesLocal[i].name].name}");
                 #endif
                 props[propertiesLocal[i].name] = propertiesLocal[i];
@@ -305,7 +305,8 @@ public class SomnaShaderUI : ShaderGUI
             !this.target.IsKeywordEnabled("_ALPHABLEND_ON"))
         {
             this.target.SetOverrideTag("RenderType", "Opaque");
-            this.target.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry;
+            if (!userModifiedRenderSettings)
+                this.target.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry;
             this.target.SetInt("_SourceBlendRGB", (int)UnityEngine.Rendering.BlendMode.One);
             this.target.SetInt("_DestinationBlendRGB", (int)UnityEngine.Rendering.BlendMode.Zero);
             this.target.SetInt("_ZWrite", 1);
@@ -2689,21 +2690,29 @@ public class SomnaShaderUI : ShaderGUI
 
     bool showRenderSettings = false;
     int renderQueueOffset = 0;
-    float sliderValue = 0;
+    private bool userModifiedRenderSettings = false;
     void RenderSettings()
     {
         EditorGUI.BeginChangeCheck();
+
+        renderQueueOffset = int.Parse(this.target.GetTag("_RenderQueueOffset", false, "0"));
 
         showRenderSettings = GetFoldState("showRenderSettings");
         SetFoldState("showRenderSettings", EditorGUILayout.Foldout(showRenderSettings, "Render Settings", true, EditorStyles.foldoutHeader));
         if (showRenderSettings)
         {
+            userModifiedRenderSettings = true;
             EditorGUI.indentLevel++;
-            editor.ShaderProperty(FindProperty("_addPassIntensity"), "Add Pass Intensity");
+            //editor.ShaderProperty(FindProperty("_addPassIntensity"), "Add Pass Intensity");
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Add Pass Intensity:");
+            target.SetFloat("_addPassIntensity", EditorGUILayout.Slider(target.GetFloat("_addPassIntensity"), 0, 1, GUILayout.ExpandWidth(true)));
+            EditorGUILayout.EndHorizontal();
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Render Queue Offset:");
             EditorGUILayout.BeginVertical();
             renderQueueOffset = EditorGUILayout.IntSlider(renderQueueOffset, -400, 400, GUILayout.ExpandWidth(true));
+            this.target.SetOverrideTag("_RenderQueueOffset", renderQueueOffset.ToString());
             EditorGUILayout.LabelField($"QUEUE: {target.renderQueue}", label, GUILayout.ExpandWidth(true));
             EditorGUILayout.EndVertical();
             EditorGUILayout.EndHorizontal();
