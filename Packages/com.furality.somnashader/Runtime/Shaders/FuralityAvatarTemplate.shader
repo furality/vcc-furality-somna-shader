@@ -38,7 +38,7 @@ Shader /*ase_name*/ "Hidden/Furality/AvatarTemplate" /*end*/
 		CGINCLUDE
 		
 		#pragma target 3.0
-		#pragma multi_compile _ALPHATEST_ON _ALPHABLEND_ON _BLEND_OFF
+		#pragma shader_feature_local _ALPHATEST_ON _ALPHABLEND_ON _BLEND_OFF
 
 		ENDCG
 	
