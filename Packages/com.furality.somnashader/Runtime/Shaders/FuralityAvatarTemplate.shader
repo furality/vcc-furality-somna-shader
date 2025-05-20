@@ -552,8 +552,6 @@ Pass
 			#pragma vertex vert
 			#pragma fragment frag
 			#pragma multi_compile_shadowcaster
-			#pragma multi_compile _ SHADOWS_SCREEN
-			#pragma multi_compile _ VERTEXLIGHT_ON
 		#ifndef UNITY_PASS_SHADOWCASTER
 				#define UNITY_PASS_SHADOWCASTER
 			#endif
