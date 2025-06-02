@@ -1,7 +1,7 @@
 {
   "name": "com.furality.somnashader",
   "displayName": "Furality Somna Shader",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "unity": "2022.3",
   "description": "Furality Somna Avatar Shader for VRChat. Created by Naito @ Furality, Inc.",
   "gitDependencies": {},
